@@ -46,7 +46,7 @@
     <h3>การ์ดของฉัน (<span id="invCount">0</span> ใบ)</h3>
     <div id="inventory"></div>
     <div style="margin-top:16px;text-align:center">
-      <button onclick="redeemDupes()" style="background:#16a34a">🔁 เลือกการ์ดซ้ำเพื่อแลกคืน</button>
+      <button onclick="redeemDupes()" style="background:#16a34a">🎟️ แลกการ์ด (5 ใบ = 1 ไม้)</button>
     </div>
     <h3>🎟️ คูปองของฉัน (<span id="cpCount">0</span>)</h3>
     <div id="coupons"></div>
@@ -57,9 +57,9 @@
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// ⚠️ ใส่กุญแจของคุณตรงนี้ ⚠️
+// ⚠️ ใช้ค่าของเดิมที่คุณมีอยู่ได้เลย
 const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy'; // <<--- เอามาวางแทนที่คำนี้
+const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy';
 const POINTS_PER_PACK = 1;
 const CARDS_PER_SAUSAGE = 5;
 
@@ -97,24 +97,19 @@ window.toggleSelect = (invId) => {
   render();
 };
 
+// แก้ไข: ให้เลือกการ์ดอะไรก็ได้ ไม่ต้องซ้ำ
 window.redeemDupes = async () => {
-  const counts = {};
-  me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
-  const used = {};
-  const valid = [...selectedIds].filter(id => {
-    const item = me.inventory.find(i => i.inventory_id === id);
-    if (!item) return false;
-    used[item.card_id] = (used[item.card_id]||0) + 1;
-    return used[item.card_id] <= counts[item.card_id] - 1;
-  });
+  const valid = [...selectedIds]; 
   if (valid.length < CARDS_PER_SAUSAGE) {
-    return toast(`ต้องเลือกการ์ดซ้ำอย่างน้อย ${CARDS_PER_SAUSAGE} ใบ`);
+    return toast(`ต้องเลือกการ์ดอย่างน้อย ${CARDS_PER_SAUSAGE} ใบ`);
   }
   const toRedeem = valid.slice(0, valid.length - (valid.length % CARDS_PER_SAUSAGE));
   if (!confirm(`แลก ${toRedeem.length} ใบ รับ ${toRedeem.length / CARDS_PER_SAUSAGE} ไม้?`)) return;
+  
   const { data, error } = await sb.rpc('rpc_create_redemption',
     { p_phone: me.phone, p_card_ids: toRedeem });
   if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
+  
   selectedIds.clear();
   await refresh();
   toast('✅ ได้คูปองแล้ว ดูที่ช่อง "คูปองของฉัน"');
@@ -125,6 +120,7 @@ async function refresh() {
   me = data; render();
 }
 
+// แก้ไข: ปลดล็อกให้กดเลือกการ์ดได้ทุกใบ
 function render() {
   document.getElementById('login').style.display = me ? 'none' : 'block';
   document.getElementById('main').style.display = me ? 'block' : 'none';
@@ -134,16 +130,12 @@ function render() {
   document.getElementById('openBtn').textContent = `🎴 เปิดการ์ด (${POINTS_PER_PACK} แต้ม)`;
   document.getElementById('openBtn').disabled = me.points < POINTS_PER_PACK;
 
-  const counts = {};
-  me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
-  const dupIds = new Set(Object.keys(counts).filter(k => counts[k] > 1).map(Number));
-
   document.getElementById('inventory').innerHTML = me.inventory.map(i => {
     const isSel = selectedIds.has(i.inventory_id);
-    const isDup = dupIds.has(i.card_id);
-    const clickable = isDup ? `onclick="toggleSelect(${i.inventory_id})"` : '';
+    const clickable = `onclick="toggleSelect(${i.inventory_id})"`; // กดได้ทุกใบ
     const overlay = isSel ? 'box-shadow:0 0 0 3px #16a34a;' : '';
-    return `<div class="card rarity-${i.rarity}" style="${overlay}cursor:${isDup?'pointer':'default'}" ${clickable}>
+    
+    return `<div class="card rarity-${i.rarity}" style="${overlay}cursor:pointer" ${clickable}>
       <div class="emoji">${i.emoji}</div>
       <div><b>${i.name}</b></div>
       <div style="font-size:12px;color:#666">พลัง ${i.power}</div>
