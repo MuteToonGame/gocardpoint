@@ -30,6 +30,7 @@
   <div class="box">
     <h3>① ให้แต้มลูกค้า</h3>
     <input id="pPhone" placeholder="เบอร์ลูกค้า (10 หลัก)" inputmode="numeric">
+    <input id="pPin" placeholder="PIN 4 หลัก (เฉพาะลูกค้าใหม่)" inputmode="numeric" maxlength="4">
     <input id="pAmount" placeholder="จำนวนแต้ม (เช่น 50)" type="number">
     <input id="pNote" placeholder="หมายเหตุ (เช่น ซื้อลูกชิ้น 5 ไม้)">
     <button onclick="addPoints()">กดให้แต้ม</button>
@@ -79,7 +80,7 @@ window.addPoints = async () => {
   if (amount > 10 && !confirm(`ให้ ${amount} แต้มแก่ ${phone} ใช่ไหม?`)) return;
   
   const { data, error } = await sb.rpc('rpc_add_points',
-    { p_phone: phone, p_amount: amount, p_note: note });
+    { p_phone: phone, p_amount: amount, p_note: note, p_pin: document.getElementById('pPin').value.trim() || null });
     
   if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
   

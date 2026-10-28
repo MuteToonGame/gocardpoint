@@ -27,8 +27,9 @@
 <div id="app">
   <div id="login">
     <h2>🍡 การ์ดลูกชิ้น</h2>
-    <p>ใส่เบอร์โทรเพื่อดูแต้ม</p>
+    <p>ใส่เบอร์โทรและ PIN 4 หลัก</p>
     <input id="phone" placeholder="0812345678" inputmode="numeric">
+    <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN 4 หลัก" style="margin-top:8px">
     <button onclick="login()">เข้า</button>
   </div>
 
@@ -46,7 +47,7 @@
     <h3>การ์ดของฉัน (<span id="invCount">0</span> ใบ)</h3>
     <div id="inventory"></div>
     <div style="margin-top:16px;text-align:center">
-      <button onclick="redeemDupes()" style="background:#16a34a">🎟️ แลกการ์ด (5 ใบ = 1 ไม้)</button>
+      <button onclick="redeemDupes()" style="background:#16a34a">🔁 เลือกการ์ดซ้ำเพื่อแลกคืน</button>
     </div>
     <h3>🎟️ คูปองของฉัน (<span id="cpCount">0</span>)</h3>
     <div id="coupons"></div>
@@ -57,33 +58,36 @@
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// ⚠️ ใช้ค่าของเดิมที่คุณมีอยู่ได้เลย
+// ⚠️ ใส่กุญแจของคุณตรงนี้ ⚠️
 const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy';
+const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy'; // <<--- เอามาวางแทนที่คำนี้
 const POINTS_PER_PACK = 1;
 const CARDS_PER_SAUSAGE = 5;
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 let me = null;
 let selectedIds = new Set();
+let pin = '';
 
 window.login = async () => {
   const phone = document.getElementById('phone').value.trim();
   if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
-  const { data, error } = await sb.rpc('rpc_get_customer', { p_phone: phone });
+  pin = document.getElementById('pin').value.trim();
+  if (!/^\d{4}$/.test(pin)) return toast('PIN ต้องเป็นเลข 4 หลัก');
+  const { data, error } = await sb.rpc('rpc_get_customer', { p_phone: phone, p_pin: pin });
   if (error) return toast('ผิดพลาด: ' + error.message);
   if (!data.ok) {
-    return toast('ยังไม่มีข้อมูล กรุณาซื้อของที่ร้านก่อน');
+    return toast(data.error === 'locked' ? 'ใส่ PIN ผิดหลายครั้ง รอ 15 นาทีแล้วลองใหม่' : 'เบอร์หรือ PIN ไม่ถูกต้อง (ถ้ายังไม่เคยซื้อ ให้ซื้อที่ร้านก่อน)');
   }
-  localStorage.setItem('phone', phone);
+  localStorage.setItem('phone', phone); localStorage.setItem('pin', pin);
   me = data; render();
 };
-window.logout = () => { localStorage.removeItem('phone'); location.reload(); };
+window.logout = () => { localStorage.removeItem('phone'); localStorage.removeItem('pin'); location.reload(); };
 
 window.openPack = async () => {
   if (me.points < POINTS_PER_PACK) return toast('แต้มไม่พอ');
   document.getElementById('openBtn').disabled = true;
-  const { data, error } = await sb.rpc('rpc_open_pack', { p_phone: me.phone });
+  const { data, error } = await sb.rpc('rpc_open_pack', { p_phone: me.phone, p_pin: pin });
   document.getElementById('openBtn').disabled = false;
   if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
   const c = data.card;
@@ -97,30 +101,34 @@ window.toggleSelect = (invId) => {
   render();
 };
 
-// แก้ไข: ให้เลือกการ์ดอะไรก็ได้ ไม่ต้องซ้ำ
 window.redeemDupes = async () => {
-  const valid = [...selectedIds]; 
+  const counts = {};
+  me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
+  const used = {};
+  const valid = [...selectedIds].filter(id => {
+    const item = me.inventory.find(i => i.inventory_id === id);
+    if (!item) return false;
+    used[item.card_id] = (used[item.card_id]||0) + 1;
+    return used[item.card_id] <= counts[item.card_id] - 1;
+  });
   if (valid.length < CARDS_PER_SAUSAGE) {
-    return toast(`ต้องเลือกการ์ดอย่างน้อย ${CARDS_PER_SAUSAGE} ใบ`);
+    return toast(`ต้องเลือกการ์ดซ้ำอย่างน้อย ${CARDS_PER_SAUSAGE} ใบ`);
   }
   const toRedeem = valid.slice(0, valid.length - (valid.length % CARDS_PER_SAUSAGE));
   if (!confirm(`แลก ${toRedeem.length} ใบ รับ ${toRedeem.length / CARDS_PER_SAUSAGE} ไม้?`)) return;
-  
   const { data, error } = await sb.rpc('rpc_create_redemption',
-    { p_phone: me.phone, p_card_ids: toRedeem });
+    { p_phone: me.phone, p_pin: pin, p_card_ids: toRedeem });
   if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
-  
   selectedIds.clear();
   await refresh();
   toast('✅ ได้คูปองแล้ว ดูที่ช่อง "คูปองของฉัน"');
 };
 
 async function refresh() {
-  const { data } = await sb.rpc('rpc_get_customer', { p_phone: me.phone });
+  const { data } = await sb.rpc('rpc_get_customer', { p_phone: me.phone, p_pin: pin });
   me = data; render();
 }
 
-// แก้ไข: ปลดล็อกให้กดเลือกการ์ดได้ทุกใบ
 function render() {
   document.getElementById('login').style.display = me ? 'none' : 'block';
   document.getElementById('main').style.display = me ? 'block' : 'none';
@@ -130,12 +138,16 @@ function render() {
   document.getElementById('openBtn').textContent = `🎴 เปิดการ์ด (${POINTS_PER_PACK} แต้ม)`;
   document.getElementById('openBtn').disabled = me.points < POINTS_PER_PACK;
 
+  const counts = {};
+  me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
+  const dupIds = new Set(Object.keys(counts).filter(k => counts[k] > 1).map(Number));
+
   document.getElementById('inventory').innerHTML = me.inventory.map(i => {
     const isSel = selectedIds.has(i.inventory_id);
-    const clickable = `onclick="toggleSelect(${i.inventory_id})"`; // กดได้ทุกใบ
+    const isDup = dupIds.has(i.card_id);
+    const clickable = isDup ? `onclick="toggleSelect(${i.inventory_id})"` : '';
     const overlay = isSel ? 'box-shadow:0 0 0 3px #16a34a;' : '';
-    
-    return `<div class="card rarity-${i.rarity}" style="${overlay}cursor:pointer" ${clickable}>
+    return `<div class="card rarity-${i.rarity}" style="${overlay}cursor:${isDup?'pointer':'default'}" ${clickable}>
       <div class="emoji">${i.emoji}</div>
       <div><b>${i.name}</b></div>
       <div style="font-size:12px;color:#666">พลัง ${i.power}</div>
@@ -160,6 +172,6 @@ function toast(msg) {
 }
 
 const saved = localStorage.getItem('phone');
-if (saved) { document.getElementById('phone').value = saved; login(); }
+if (saved) { document.getElementById('phone').value = saved; document.getElementById('pin').value = localStorage.getItem('pin') || ''; login(); }
 </script>
 </body></html>
