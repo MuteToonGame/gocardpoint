@@ -5,61 +5,249 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>พนักงานร้าน</title>
 <style>
-  body{font-family:sans-serif;max-width:480px;margin:0 auto;padding:16px;background:#eef}
-  input,button{padding:12px;font-size:16px;width:100%;box-sizing:border-box;
-               border-radius:8px;border:1px solid #ccc;margin:6px 0}
-  button{background:#2563eb;color:#fff;border:none;cursor:pointer;font-weight:bold}
-  .box{background:#fff;padding:16px;border-radius:12px;margin:12px 0;box-shadow:0 2px 6px rgba(0,0,0,.1)}
-  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-         background:#333;color:#fff;padding:10px 20px;border-radius:8px;display:none}
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 480px; margin: 0 auto; padding: 16px;
+    background: #eef2ff; color: #1f2937;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h2 { margin: 0 0 8px; font-size: 20px; }
+
+  input {
+    padding: 12px; font-size: 16px; width: 100%;
+    border-radius: 10px; border: 1px solid #d1d5db; background: #fff;
+  }
+  input:focus { outline: 2px solid #3b82f6; outline-offset: 1px; border-color: #3b82f6; }
+
+  button {
+    padding: 12px 20px; font-size: 16px; font-weight: 600;
+    border-radius: 10px; border: none; background: #2563eb;
+    color: #fff; cursor: pointer; width: 100%;
+    transition: transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:active:not(:disabled) { transform: scale(.97); }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  .box {
+    background: #fff; padding: 16px; border-radius: 14px;
+    margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .header h2 { margin: 0; }
+  .header .logout-btn { width: auto; padding: 8px 14px; font-size: 14px; background: #9ca3af; font-weight: 500; }
+
+  .step-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .step-num {
+    width: 28px; height: 28px; background: #2563eb; color: #fff;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .step-title h3 { margin: 0; font-size: 17px; }
+
+  /* Customer info card */
+  .customer-info {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #bae6fd; padding: 12px; border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .customer-info .name { font-weight: 600; font-size: 16px; }
+  .customer-info .phone { color: #555; font-size: 13px; }
+  .customer-info .points { font-size: 15px; margin-top: 4px; }
+  .customer-info .points b { color: #b45309; font-size: 20px; }
+
+  /* +1 / +2 buttons */
+  .points-btns {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-top: 4px;
+  }
+  .points-btns button {
+    padding: 28px 16px; font-size: 26px; font-weight: 700;
+    background: #f9fafb; color: #1f2937; border: 2px solid #d1d5db;
+  }
+  .points-btns button.selected {
+    background: #2563eb; color: #fff; border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.2);
+  }
+
+  /* Confirm bar */
+  .confirm-bar {
+    background: #f0fdf4; border: 1px solid #86efac;
+    padding: 12px; border-radius: 10px; margin-top: 12px;
+    display: none;
+  }
+  .confirm-bar.show { display: block; }
+  .confirm-text { text-align: center; margin-bottom: 10px; font-size: 15px; color: #166534; }
+  .confirm-text b { font-size: 18px; }
+  #confirmBtn { background: #16a34a; padding: 14px; font-size: 17px; }
+
+  /* Result */
+  .result-box {
+    background: #f0fdf4; border: 1px solid #86efac;
+    padding: 16px; border-radius: 10px; text-align: center;
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-box .check { font-size: 36px; }
+  .result-box .title { font-size: 17px; font-weight: 700; color: #166534; margin: 8px 0 4px; }
+  .result-box .detail { font-size: 14px; color: #555; margin-bottom: 14px; }
+  .result-box .detail b { color: #b45309; font-size: 18px; }
+  .result-box .actions { display: flex; gap: 8px; }
+  .result-box .actions button { flex: 1; padding: 12px; font-size: 14px; }
+  #voidBtn { background: #ef4444; }
+  #doneBtn { background: #16a34a; }
+
+  /* Phone input with inline button */
+  .phone-input-group { display: flex; gap: 8px; }
+  .phone-input-group input { flex: 1; }
+  .phone-input-group button { width: auto; padding: 12px 16px; flex-shrink: 0; font-size: 14px; }
+
+  /* History */
+  .hist-row { border-bottom: 1px solid #eee; padding: 8px 0; font-size: 13px; }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-row .row-time { color: #999; font-size: 11px; }
+  .hist-row .row-action { font-weight: 600; }
+  .hist-row .row-actor { color: #888; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #333; color: #fff; padding: 10px 20px; border-radius: 10px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 100; max-width: 90%; text-align: center; font-size: 14px;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-<h2>👨‍💼 ระบบหลังบ้านพนักงาน</h2>
 
 <div id="loginBox" class="box">
-  <h3>เข้าสู่ระบบ</h3>
-  <input id="email" placeholder="อีเมลพนักงาน" type="email">
-  <input id="pass" placeholder="รหัสผ่าน" type="password">
+  <h2>👨‍💼 เข้าสู่ระบบพนักงาน</h2>
+  <input id="email" placeholder="อีเมลพนักงาน" type="email" autocomplete="username" style="margin-bottom:8px">
+  <input id="pass" placeholder="รหัสผ่าน" type="password" autocomplete="current-password" style="margin-bottom:12px">
   <button onclick="login()">เข้าสู่ระบบ</button>
 </div>
 
 <div id="main" style="display:none">
-  <button onclick="logout()" style="background:#999; margin-bottom:16px;">ออกจากระบบ</button>
-
-  <div class="box">
-    <h3>① ให้แต้มลูกค้า</h3>
-    <input id="pPhone" placeholder="เบอร์ลูกค้า (10 หลัก)" inputmode="numeric">
-    <input id="pPin" placeholder="PIN 4 หลัก (เฉพาะลูกค้าใหม่)" inputmode="numeric" maxlength="4">
-    <input id="pAmount" placeholder="จำนวนแต้ม (เช่น 50)" type="number">
-    <input id="pNote" placeholder="หมายเหตุ (เช่น ซื้อลูกชิ้น 5 ไม้)">
-    <button onclick="addPoints()">กดให้แต้ม</button>
+  <div class="header">
+    <h2>👨‍💼 ระบบหลังบ้านพนักงาน</h2>
+    <button class="logout-btn" onclick="logout()">ออก</button>
   </div>
 
+  <!-- ① ให้แต้มลูกค้า -->
   <div class="box">
-    <h3>② แลกโค้ดคืนลูกชิ้น</h3>
-    <input id="rCode" placeholder="กรอกโค้ด 6 หลักของลูกค้า" inputmode="numeric" maxlength="6">
+    <div class="step-title">
+      <div class="step-num">①</div>
+      <h3>ให้แต้มลูกค้า</h3>
+    </div>
+
+    <!-- State A: idle -->
+    <div id="giveIdle">
+      <div class="phone-input-group">
+        <input id="pPhone" placeholder="เบอร์ลูกค้า 10 หลัก" inputmode="numeric" maxlength="10">
+        <button onclick="verifyCustomer()">ตรวจสอบ</button>
+      </div>
+      <p style="font-size:12px;color:#888;margin:8px 0 0">ใส่เบอร์ → ตรวจสอบ → เลือกแต้ม → ยืนยัน</p>
+    </div>
+
+    <!-- State B: verified (show +1/+2) -->
+    <div id="giveSelect" style="display:none">
+      <div class="customer-info" id="customerInfo"></div>
+
+      <div id="pinFieldWrap" style="display:none; margin-bottom:10px">
+        <input id="pPin" placeholder="PIN 4 หลัก (ลูกค้าใหม่)" inputmode="numeric" maxlength="4">
+        <p style="font-size:12px;color:#b45309;margin:6px 0 0">⚠️ ไม่พบลูกค้าในระบบ · กรอก PIN เพื่อสร้างใหม่</p>
+      </div>
+
+      <div class="points-btns">
+        <button id="btn1" onclick="selectAmount(1)">+1</button>
+        <button id="btn2" onclick="selectAmount(2)">+2</button>
+      </div>
+
+      <div class="confirm-bar" id="confirmBar">
+        <div class="confirm-text" id="confirmText"></div>
+        <button id="confirmBtn" onclick="confirmAdd()">ยืนยัน</button>
+      </div>
+
+      <button onclick="resetGive()" style="background:#9ca3af;margin-top:10px;font-size:14px;padding:8px">เปลี่ยนเบอร์</button>
+    </div>
+
+    <!-- State C: done -->
+    <div id="giveDone" class="result-box">
+      <div class="check">✅</div>
+      <div class="title" id="doneTitle"></div>
+      <div class="detail" id="doneDetail"></div>
+      <div class="actions">
+        <button id="voidBtn" onclick="voidLastAdd()">↩️ ยกเลิก</button>
+        <button id="doneBtn" onclick="finishGive()">เสร็จ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② แลกโค้ดคืนลูกชิ้น -->
+  <div class="box">
+    <div class="step-title">
+      <div class="step-num">②</div>
+      <h3>แลกโค้ดคืนลูกชิ้น</h3>
+    </div>
+    <input id="rCode" placeholder="โค้ด 6 หลักของลูกค้า" inputmode="numeric" maxlength="6" style="margin-bottom:8px">
     <button onclick="useRedemption()" style="background:#16a34a">ตรวจสอบ & ใช้โค้ด</button>
   </div>
 
+  <!-- ③ ประวัติ -->
   <div class="box">
-    <h3>③ ประวัติย้อนหลังของลูกค้า</h3>
-    <input id="hPhone" placeholder="เบอร์ลูกค้า (10 หลัก)" inputmode="numeric">
-    <button onclick="showHistory()" style="background:#7c3aed">ดูประวัติ</button>
-    <div id="hist"></div>
+    <div class="step-title">
+      <div class="step-num">③</div>
+      <h3>ประวัติลูกค้า</h3>
+    </div>
+    <div class="phone-input-group">
+      <input id="hPhone" placeholder="เบอร์ลูกค้า 10 หลัก" inputmode="numeric" maxlength="10">
+      <button onclick="showHistory()" style="background:#7c3aed">ดูประวัติ</button>
+    </div>
+    <div id="hist" style="margin-top:10px"></div>
   </div>
 </div>
+
 <div id="toast"></div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// ⚠️ ใส่กุญแจของคุณตรงนี้ (เหมือนกับ customer.html) ⚠️
-const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy'; 
+// ⚠️ กุญแจเดียวกับ customer.html
+const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy';
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const MAX_POINTS = 2;
+const VOID_WINDOW_MS = 15 * 60 * 1000;
 
+let giveState = {
+  phone: null, name: null, currentPoints: null,
+  amount: null, isNew: false, result: null,
+};
+let voidTimer = null;
+
+// ---------- helpers ----------
+const esc = t => String(t ?? '').replace(/[&<>"']/g,
+  m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+let toastTimer = null;
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function showMain() {
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+}
+
+// ---------- auth ----------
 window.login = async () => {
   const email = document.getElementById('email').value;
   const pass  = document.getElementById('pass').value;
@@ -67,66 +255,237 @@ window.login = async () => {
   if (error) return toast('ผิดพลาด: ' + error.message);
   showMain();
 };
-
 window.logout = async () => { await sb.auth.signOut(); location.reload(); };
 
-window.addPoints = async () => {
+// ---------- ① give points ----------
+window.verifyCustomer = async () => {
   const phone = document.getElementById('pPhone').value.trim();
-  const amount = parseInt(document.getElementById('pAmount').value);
-  const note = document.getElementById('pNote').value.trim() || null;
-  
-  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0 และมี 10 หลัก)');
-  if (!amount || amount < 1) return toast('จำนวนแต้มไม่ถูกต้อง');
-  if (amount > 10 && !confirm(`ให้ ${amount} แต้มแก่ ${phone} ใช่ไหม?`)) return;
-  
-  const { data, error } = await sb.rpc('rpc_add_points',
-    { p_phone: phone, p_amount: amount, p_note: note, p_pin: document.getElementById('pPin').value.trim() || null });
-    
-  if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
-  
-  toast(`✅ เบอร์ ${data.phone} มีแต้มรวม ${data.points} แต้ม`);
-  document.getElementById('pAmount').value = '';
-  document.getElementById('pNote').value = '';
+  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
+
+  let customer = null;
+  let isNew = false;
+
+  // 1) ลองใช้ rpc_lookup_customer ก่อน (ถ้ามี)
+  const { data: look, error: lookErr } = await sb.rpc('rpc_lookup_customer', { p_phone: phone });
+  if (!lookErr && look) {
+    if (look.ok) {
+      customer = { name: look.name, points: look.points };
+    } else if (look.error === 'not_found') {
+      isNew = true;
+    }
+  }
+
+  // 2) fallback: เช็คผ่านประวัติ
+  if (!customer && !isNew) {
+    const { data: hist } = await sb.rpc('rpc_get_history', { p_phone: phone });
+    if (hist?.ok && hist.rows?.length > 0) {
+      customer = { name: null, points: null };
+    } else if (hist?.ok) {
+      isNew = true;
+    } else {
+      return toast('ตรวจสอบลูกค้าไม่สำเร็จ');
+    }
+  }
+
+  giveState = {
+    phone, name: customer?.name, currentPoints: customer?.points,
+    amount: null, isNew, result: null,
+  };
+  renderSelect();
 };
 
+function renderSelect() {
+  document.getElementById('giveIdle').style.display = 'none';
+  document.getElementById('giveSelect').style.display = 'block';
+  document.getElementById('giveDone').classList.remove('show');
+  document.getElementById('confirmBar').classList.remove('show');
+
+  const s = giveState;
+  const info = document.getElementById('customerInfo');
+  const nameLine = s.name ? esc(s.name) : (s.isNew ? '👤 ลูกค้าใหม่' : '👤 ลูกค้า');
+  const pointsLine = s.currentPoints != null
+    ? `⭐ แต้มปัจจุบัน: <b>${s.currentPoints}</b>`
+    : `⭐ แต้มปัจจุบัน: <span style="color:#999">—</span>`;
+
+  info.innerHTML = `
+    <div class="name">${nameLine}</div>
+    <div class="phone">${esc(s.phone)}</div>
+    <div class="points">${pointsLine}</div>
+  `;
+
+  document.getElementById('pinFieldWrap').style.display = s.isNew ? 'block' : 'none';
+  document.getElementById('btn1').classList.remove('selected');
+  document.getElementById('btn2').classList.remove('selected');
+  document.getElementById('confirmBtn').disabled = false;
+  document.getElementById('confirmBtn').textContent = 'ยืนยัน';
+}
+
+window.selectAmount = (n) => {
+  if (n < 1 || n > MAX_POINTS) return;
+  giveState.amount = n;
+  document.getElementById('btn1').classList.toggle('selected', n === 1);
+  document.getElementById('btn2').classList.toggle('selected', n === 2);
+
+  const bar = document.getElementById('confirmBar');
+  document.getElementById('confirmText').innerHTML =
+    `ยืนยันให้ <b>+${n}</b> แต้ม · ${esc(giveState.phone)}`;
+  bar.classList.add('show');
+};
+
+window.confirmAdd = async () => {
+  if (!giveState.amount) return;
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+
+  const pin = (document.getElementById('pPin')?.value || '').trim() || null;
+
+  const { data, error } = await sb.rpc('rpc_add_points', {
+    p_phone: giveState.phone,
+    p_amount: giveState.amount,
+    p_note: 'ซื้อลูกชิ้น',
+    p_pin: pin,
+  });
+
+  if (error || !data.ok) {
+    btn.disabled = false;
+    btn.textContent = 'ยืนยัน';
+    return toast('ผิดพลาด: ' + (data?.error || error?.message));
+  }
+
+  giveState.result = {
+    phone: data.phone,
+    points: data.points,
+    amount: giveState.amount,
+    at: Date.now(),
+  };
+  renderDone();
+};
+
+function renderDone() {
+  document.getElementById('giveSelect').style.display = 'none';
+  const box = document.getElementById('giveDone');
+  box.classList.add('show');
+
+  const r = giveState.result;
+  const namePrefix = giveState.name ? esc(giveState.name) + ' · ' : '';
+  document.getElementById('doneTitle').textContent = `ให้ +${r.amount} แต้มแล้ว`;
+  document.getElementById('doneDetail').innerHTML =
+    `${namePrefix}${esc(r.phone)}<br>แต้มรวมตอนนี้: <b>${r.points}</b>`;
+
+  document.getElementById('voidBtn').disabled = false;
+  updateVoidBtn();
+  clearInterval(voidTimer);
+  voidTimer = setInterval(updateVoidBtn, 10000);
+}
+
+function updateVoidBtn() {
+  if (!giveState.result) return;
+  const btn = document.getElementById('voidBtn');
+  const remaining = VOID_WINDOW_MS - (Date.now() - giveState.result.at);
+  if (remaining <= 0) {
+    btn.style.display = 'none';
+    clearInterval(voidTimer);
+    return;
+  }
+  const mins = Math.ceil(remaining / 60000);
+  btn.textContent = `↩️ ยกเลิก (${mins} นาที)`;
+  btn.style.display = '';
+}
+
+window.voidLastAdd = async () => {
+  if (!giveState.result) return;
+  if (Date.now() - giveState.result.at > VOID_WINDOW_MS)
+    return toast('เลยเวลา 15 นาทีแล้ว');
+
+  if (!confirm(`ยกเลิกการให้ ${giveState.result.amount} แต้ม?`)) return;
+
+  const btn = document.getElementById('voidBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังยกเลิก...';
+
+  // ลอง rpc_void_last_add ก่อน
+  let ok = false;
+  const { data: voidData, error: voidErr } = await sb.rpc('rpc_void_last_add', {
+    p_phone: giveState.result.phone,
+    p_amount: giveState.result.amount,
+  });
+  if (!voidErr && voidData?.ok) ok = true;
+
+  // fallback: ใช้ rpc_add_points ติดลบ (ถ้า RPC รับค่าลบ)
+  if (!ok) {
+    const { data: neg } = await sb.rpc('rpc_add_points', {
+      p_phone: giveState.result.phone,
+      p_amount: -giveState.result.amount,
+      p_note: 'ยกเลิกกดผิด',
+      p_pin: null,
+    });
+    if (neg?.ok) ok = true;
+  }
+
+  if (!ok) {
+    btn.disabled = false;
+    updateVoidBtn();
+    return toast('ยกเลิกไม่ได้ · แจ้งผู้จัดการ');
+  }
+
+  toast('↩️ ยกเลิกแล้ว');
+  // กลับไปหน้าเลือก (ลูกค้าคนเดิม)
+  giveState.result = null;
+  clearInterval(voidTimer);
+  document.getElementById('giveDone').classList.remove('show');
+  renderSelect();
+};
+
+window.finishGive = () => {
+  clearInterval(voidTimer);
+  giveState = { phone: null, name: null, currentPoints: null, amount: null, isNew: false, result: null };
+  document.getElementById('pPhone').value = '';
+  document.getElementById('pPin').value = '';
+  document.getElementById('giveIdle').style.display = 'block';
+  document.getElementById('giveSelect').style.display = 'none';
+  document.getElementById('giveDone').classList.remove('show');
+};
+
+window.resetGive = () => {
+  giveState = { phone: null, name: null, currentPoints: null, amount: null, isNew: false, result: null };
+  document.getElementById('pPhone').value = '';
+  document.getElementById('pPin').value = '';
+  document.getElementById('giveIdle').style.display = 'block';
+  document.getElementById('giveSelect').style.display = 'none';
+};
+
+// ---------- ② redeem ----------
 window.useRedemption = async () => {
   const code = document.getElementById('rCode').value.trim();
   if (!/^\d{6}$/.test(code)) return toast('โค้ดต้องเป็นเลข 6 หลัก');
-  
   const { data, error } = await sb.rpc('rpc_use_redemption', { p_code: code });
-  
   if (error || !data.ok) {
     const msg = data?.error === 'already_used' ? '⚠️ โค้ดนี้ถูกใช้ไปแล้ว'
               : data?.error === 'invalid_code' ? '❌ ไม่พบโค้ดนี้ในระบบ'
               : (error?.message || data?.error);
     return toast(msg);
   }
-  
   alert(`✅ แลกสำเร็จ!\n\nลูกค้าใช้การ์ด ${data.cards} ใบ\nให้ลูกชิ้นลูกค้าได้เลย!`);
   document.getElementById('rCode').value = '';
 };
 
-const esc = t => String(t ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+// ---------- ③ history ----------
 window.showHistory = async () => {
   const phone = document.getElementById('hPhone').value.trim();
   if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
   const { data, error } = await sb.rpc('rpc_get_history', { p_phone: phone });
   if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
-  document.getElementById('hist').innerHTML = data.rows.map(r =>
-    `<div style="border-bottom:1px solid #eee;padding:6px 0;font-size:14px">${new Date(r.at).toLocaleString('th-TH')}<br><b>${esc(r.action)}</b> ${esc(r.delta)} ${esc(r.note)} <span style="color:#888">(${esc(r.actor || 'ลูกค้า')})</span></div>`
-  ).join('') || '<p style="color:#999">ไม่มีประวัติ</p>';
+  document.getElementById('hist').innerHTML = data.rows.map(r => `
+    <div class="hist-row">
+      <div class="row-time">${new Date(r.at).toLocaleString('th-TH')}</div>
+      <div><span class="row-action">${esc(r.action)}</span> <b>${esc(r.delta)}</b> ${esc(r.note || '')} <span class="row-actor">(${esc(r.actor || 'ลูกค้า')})</span></div>
+    </div>`).join('')
+    || '<p style="color:#999;text-align:center;margin:10px 0">ไม่มีประวัติ</p>';
 };
 
-function showMain() {
-  document.getElementById('loginBox').style.display = 'none';
-  document.getElementById('main').style.display = 'block';
-}
-function toast(m){
-  const t=document.getElementById('toast');t.textContent=m;t.style.display='block';
-  setTimeout(()=>t.style.display='none',3000);
-}
-
-// ตรวจสอบว่าล็อกอินค้างไว้หรือไม่
+// ---------- auto session ----------
 sb.auth.getSession().then(({ data }) => { if (data.session) showMain(); });
 </script>
-</body></html>
+</body>
+</html>
