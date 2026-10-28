@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>การ์ดลูกชิ้น</title>
+<style>
+  body{font-family:sans-serif;max-width:480px;margin:0 auto;padding:16px;background:#fff8e7}
+  .card{background:#fff;border-radius:12px;padding:12px;margin:6px;display:inline-block;
+        box-shadow:0 2px 6px rgba(0,0,0,.1);width:100px;text-align:center}
+  .card .emoji{font-size:40px}
+  .rarity-common{border:2px solid #ccc}
+  .rarity-rare{border:2px solid #3b82f6}
+  .rarity-epic{border:2px solid #a855f7}
+  .rarity-legendary{border:2px solid #eab308}
+  button{padding:12px 20px;font-size:16px;border-radius:10px;border:none;
+         background:#ef4444;color:#fff;cursor:pointer;margin:4px}
+  button:disabled{background:#ccc}
+  input{padding:10px;font-size:16px;width:100%;box-sizing:border-box;border-radius:8px;border:1px solid #ccc}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+         background:#333;color:#fff;padding:10px 20px;border-radius:8px;display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="login">
+    <h2>🍡 การ์ดลูกชิ้น</h2>
+    <p>ใส่เบอร์โทรเพื่อดูแต้ม</p>
+    <input id="phone" placeholder="0812345678" inputmode="numeric">
+    <button onclick="login()">เข้า</button>
+  </div>
+
+  <div id="main" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>สวัสดี 👋</h2>
+      <button onclick="logout()" style="background:#999;padding:6px 12px">ออก</button>
+    </div>
+    <div style="background:#fef;padding:16px;border-radius:12px;text-align:center;font-size:22px">
+      ⭐ แต้ม: <b id="points">0</b>
+    </div>
+    <div style="text-align:center;margin:16px 0">
+      <button onclick="openPack()" id="openBtn">🎴 เปิดการ์ด (10 แต้ม)</button>
+    </div>
+    <h3>การ์ดของฉัน (<span id="invCount">0</span> ใบ)</h3>
+    <div id="inventory"></div>
+    <div style="margin-top:16px;text-align:center">
+      <button onclick="redeemDupes()" style="background:#16a34a">🔁 เลือกการ์ดซ้ำเพื่อแลกคืน</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ⚠️ ใส่กุญแจของคุณตรงนี้ ⚠️
+const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co'; 
+const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy'; // <<--- เอามาวางแทนที่คำนี้
+const POINTS_PER_PACK = 10;
+const CARDS_PER_SAUSAGE = 3;
+
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+let me = null;
+let selectedIds = new Set();
+
+window.login = async () => {
+  const phone = document.getElementById('phone').value.trim();
+  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
+  const { data, error } = await sb.rpc('rpc_get_customer', { p_phone: phone });
+  if (error) return toast('ผิดพลาด: ' + error.message);
+  if (!data.ok) {
+    return toast('ยังไม่มีข้อมูล กรุณาซื้อของที่ร้านก่อน');
+  }
+  localStorage.setItem('phone', phone);
+  me = data; render();
+};
+window.logout = () => { localStorage.removeItem('phone'); location.reload(); };
+
+window.openPack = async () => {
+  if (me.points < POINTS_PER_PACK) return toast('แต้มไม่พอ');
+  document.getElementById('openBtn').disabled = true;
+  const { data, error } = await sb.rpc('rpc_open_pack', { p_phone: me.phone });
+  document.getElementById('openBtn').disabled = false;
+  if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
+  const c = data.card;
+  toast(`✨ ได้ ${c.emoji} ${c.name} (พลัง ${c.power})`);
+  await refresh();
+};
+
+window.toggleSelect = (invId) => {
+  if (selectedIds.has(invId)) selectedIds.delete(invId);
+  else selectedIds.add(invId);
+  render();
+};
+
+window.redeemDupes = async () => {
+  const counts = {};
+  me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
+  const valid = [...selectedIds].filter(id => {
+    const item = me.inventory.find(i => i.inventory_id === id);
+    return counts[item.card_id] > 1;
+  });
+  if (valid.length < CARDS_PER_SAUSAGE) {
+    return toast(`ต้องเลือกการ์ดซ้ำอย่างน้อย ${CARDS_PER_SAUSAGE} ใบ`);
+  }
+  const toRedeem = valid.slice(0, valid.length - (valid.length % CARDS_PER_SAUSAGE));
+  if (!confirm(`แลก ${toRedeem.length} ใบ รับ ${toRedeem.length / CARDS_PER_SAUSAGE} ไม้?`)) return;
+  const { data, error } = await sb.rpc('rpc_create_redemption',
+    { p_phone: me.phone, p_card_ids: toRedeem });
+  if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
+  selectedIds.clear();
+  await refresh();
+  alert(`✅ โค้ดแลกคืน: ${data.code}\n\nใช้ ${data.cards} ใบ → รับ ${data.cards / CARDS_PER_SAUSAGE} ไม้ลูกชิ้น\n\nแสดงโค้ดนี้ที่ร้าน`);
+};
+
+async function refresh() {
+  const { data } = await sb.rpc('rpc_get_customer', { p_phone: me.phone });
+  me = data; render();
+}
+
+function render() {
+  document.getElementById('login').style.display = me ? 'none' : 'block';
+  document.getElementById('main').style.display = me ? 'block' : 'none';
+  if (!me) return;
+  document.getElementById('points').textContent = me.points;
+  document.getElementById('invCount').textContent = me.inventory.length;
+  document.getElementById('openBtn').textContent = `🎴 เปิดการ์ด (${POINTS_PER_PACK} แต้ม)`;
+  document.getElementById('openBtn').disabled = me.points < POINTS_PER_PACK;
+
+  const counts = {};
+  me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
+  const dupIds = new Set(Object.keys(counts).filter(k => counts[k] > 1).map(Number));
+
+  document.getElementById('inventory').innerHTML = me.inventory.map(i => {
+    const isSel = selectedIds.has(i.inventory_id);
+    const isDup = dupIds.has(i.card_id);
+    const clickable = isDup ? `onclick="toggleSelect(${i.inventory_id})"` : '';
+    const overlay = isSel ? 'box-shadow:0 0 0 3px #16a34a;' : '';
+    return `<div class="card rarity-${i.rarity}" style="${overlay}cursor:${isDup?'pointer':'default'}" ${clickable}>
+      <div class="emoji">${i.emoji}</div>
+      <div><b>${i.name}</b></div>
+      <div style="font-size:12px;color:#666">พลัง ${i.power}</div>
+    </div>`;
+  }).join('');
+
+  if (me.inventory.length === 0) {
+    document.getElementById('inventory').innerHTML = '<p style="text-align:center;color:#999">ยังไม่มีการ์ด ไปซื้อลูกชิ้นก่อน!</p>';
+  }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+const saved = localStorage.getItem('phone');
+if (saved) { document.getElementById('phone').value = saved; login(); }
+</script>
+</body></html>

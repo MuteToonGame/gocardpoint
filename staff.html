@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>พนักงานร้าน</title>
+<style>
+  body{font-family:sans-serif;max-width:480px;margin:0 auto;padding:16px;background:#eef}
+  input,button{padding:12px;font-size:16px;width:100%;box-sizing:border-box;
+               border-radius:8px;border:1px solid #ccc;margin:6px 0}
+  button{background:#2563eb;color:#fff;border:none;cursor:pointer;font-weight:bold}
+  .box{background:#fff;padding:16px;border-radius:12px;margin:12px 0;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+         background:#333;color:#fff;padding:10px 20px;border-radius:8px;display:none}
+</style>
+</head>
+<body>
+<h2>👨‍💼 ระบบหลังบ้านพนักงาน</h2>
+
+<div id="loginBox" class="box">
+  <h3>เข้าสู่ระบบ</h3>
+  <input id="email" placeholder="อีเมลพนักงาน" type="email">
+  <input id="pass" placeholder="รหัสผ่าน" type="password">
+  <button onclick="login()">เข้าสู่ระบบ</button>
+</div>
+
+<div id="main" style="display:none">
+  <button onclick="logout()" style="background:#999; margin-bottom:16px;">ออกจากระบบ</button>
+
+  <div class="box">
+    <h3>① ให้แต้มลูกค้า</h3>
+    <input id="pPhone" placeholder="เบอร์ลูกค้า (10 หลัก)" inputmode="numeric">
+    <input id="pAmount" placeholder="จำนวนแต้ม (เช่น 50)" type="number">
+    <input id="pNote" placeholder="หมายเหตุ (เช่น ซื้อลูกชิ้น 5 ไม้)">
+    <button onclick="addPoints()">กดให้แต้ม</button>
+  </div>
+
+  <div class="box">
+    <h3>② แลกโค้ดคืนลูกชิ้น</h3>
+    <input id="rCode" placeholder="กรอกโค้ด 6 หลักของลูกค้า" inputmode="numeric" maxlength="6">
+    <button onclick="useRedemption()" style="background:#16a34a">ตรวจสอบ & ใช้โค้ด</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ⚠️ ใส่กุญแจของคุณตรงนี้ (เหมือนกับ customer.html) ⚠️
+const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co'; 
+const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy'; 
+
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.login = async () => {
+  const email = document.getElementById('email').value;
+  const pass  = document.getElementById('pass').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) return toast('ผิดพลาด: ' + error.message);
+  showMain();
+};
+
+window.logout = async () => { await sb.auth.signOut(); location.reload(); };
+
+window.addPoints = async () => {
+  const phone = document.getElementById('pPhone').value.trim();
+  const amount = parseInt(document.getElementById('pAmount').value);
+  const note = document.getElementById('pNote').value.trim() || null;
+  
+  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0 และมี 10 หลัก)');
+  if (!amount || amount < 1) return toast('จำนวนแต้มไม่ถูกต้อง');
+  
+  const { data, error } = await sb.rpc('rpc_add_points',
+    { p_phone: phone, p_amount: amount, p_note: note });
+    
+  if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
+  
+  toast(`✅ เบอร์ ${data.phone} มีแต้มรวม ${data.points} แต้ม`);
+  document.getElementById('pAmount').value = '';
+  document.getElementById('pNote').value = '';
+};
+
+window.useRedemption = async () => {
+  const code = document.getElementById('rCode').value.trim();
+  if (!/^\d{6}$/.test(code)) return toast('โค้ดต้องเป็นเลข 6 หลัก');
+  
+  const { data, error } = await sb.rpc('rpc_use_redemption', { p_code: code });
+  
+  if (error || !data.ok) {
+    const msg = data?.error === 'already_used' ? '⚠️ โค้ดนี้ถูกใช้ไปแล้ว'
+              : data?.error === 'invalid_code' ? '❌ ไม่พบโค้ดนี้ในระบบ'
+              : (error?.message || data?.error);
+    return toast(msg);
+  }
+  
+  alert(`✅ แลกสำเร็จ!\n\nลูกค้าใช้การ์ด ${data.cards} ใบ\nให้ลูกชิ้นลูกค้าได้เลย!`);
+  document.getElementById('rCode').value = '';
+};
+
+function showMain() {
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+}
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+
+// ตรวจสอบว่าล็อกอินค้างไว้หรือไม่
+sb.auth.getSession().then(({ data }) => { if (data.session) showMain(); });
+</script>
+</body></html>
