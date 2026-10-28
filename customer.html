@@ -17,6 +17,8 @@
          background:#ef4444;color:#fff;cursor:pointer;margin:4px}
   button:disabled{background:#ccc}
   input{padding:10px;font-size:16px;width:100%;box-sizing:border-box;border-radius:8px;border:1px solid #ccc}
+  .coupon{background:#fff;border:2px dashed #16a34a;border-radius:12px;padding:12px;margin:8px 0;text-align:center}
+  .coupon .code{font-size:32px;font-weight:bold;letter-spacing:6px;color:#16a34a}
   #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
          background:#333;color:#fff;padding:10px 20px;border-radius:8px;display:none}
 </style>
@@ -39,13 +41,15 @@
       ⭐ แต้ม: <b id="points">0</b>
     </div>
     <div style="text-align:center;margin:16px 0">
-      <button onclick="openPack()" id="openBtn">🎴 เปิดการ์ด (10 แต้ม)</button>
+      <button onclick="openPack()" id="openBtn">🎴 เปิดการ์ด (1 แต้ม)</button>
     </div>
     <h3>การ์ดของฉัน (<span id="invCount">0</span> ใบ)</h3>
     <div id="inventory"></div>
     <div style="margin-top:16px;text-align:center">
       <button onclick="redeemDupes()" style="background:#16a34a">🔁 เลือกการ์ดซ้ำเพื่อแลกคืน</button>
     </div>
+    <h3>🎟️ คูปองของฉัน (<span id="cpCount">0</span>)</h3>
+    <div id="coupons"></div>
   </div>
 </div>
 <div id="toast"></div>
@@ -56,8 +60,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // ⚠️ ใส่กุญแจของคุณตรงนี้ ⚠️
 const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy'; // <<--- เอามาวางแทนที่คำนี้
-const POINTS_PER_PACK = 10;
-const CARDS_PER_SAUSAGE = 3;
+const POINTS_PER_PACK = 1;
+const CARDS_PER_SAUSAGE = 5;
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 let me = null;
@@ -96,9 +100,12 @@ window.toggleSelect = (invId) => {
 window.redeemDupes = async () => {
   const counts = {};
   me.inventory.forEach(i => counts[i.card_id] = (counts[i.card_id]||0)+1);
+  const used = {};
   const valid = [...selectedIds].filter(id => {
     const item = me.inventory.find(i => i.inventory_id === id);
-    return counts[item.card_id] > 1;
+    if (!item) return false;
+    used[item.card_id] = (used[item.card_id]||0) + 1;
+    return used[item.card_id] <= counts[item.card_id] - 1;
   });
   if (valid.length < CARDS_PER_SAUSAGE) {
     return toast(`ต้องเลือกการ์ดซ้ำอย่างน้อย ${CARDS_PER_SAUSAGE} ใบ`);
@@ -110,7 +117,7 @@ window.redeemDupes = async () => {
   if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
   selectedIds.clear();
   await refresh();
-  alert(`✅ โค้ดแลกคืน: ${data.code}\n\nใช้ ${data.cards} ใบ → รับ ${data.cards / CARDS_PER_SAUSAGE} ไม้ลูกชิ้น\n\nแสดงโค้ดนี้ที่ร้าน`);
+  toast('✅ ได้คูปองแล้ว ดูที่ช่อง "คูปองของฉัน"');
 };
 
 async function refresh() {
@@ -142,6 +149,12 @@ function render() {
       <div style="font-size:12px;color:#666">พลัง ${i.power}</div>
     </div>`;
   }).join('');
+
+  const cps = me.coupons || [];
+  document.getElementById('cpCount').textContent = cps.length;
+  document.getElementById('coupons').innerHTML = cps.length
+    ? cps.map(k => `<div class="coupon"><div>🍡 ลูกชิ้น <b>${k.cards / CARDS_PER_SAUSAGE}</b> ไม้</div><div class="code">${k.code}</div><div style="font-size:12px;color:#666">แสดงโค้ดนี้ที่ร้าน · ${new Date(k.created_at).toLocaleDateString('th-TH')}</div></div>`).join('')
+    : '<p style="text-align:center;color:#999">ยังไม่มีคูปองที่ยังไม่ได้ใช้</p>';
 
   if (me.inventory.length === 0) {
     document.getElementById('inventory').innerHTML = '<p style="text-align:center;color:#999">ยังไม่มีการ์ด ไปซื้อลูกชิ้นก่อน!</p>';
