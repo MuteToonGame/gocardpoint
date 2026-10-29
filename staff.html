@@ -522,15 +522,13 @@ window.showHistory = async () => {
     || '<p style="color:#999;text-align:center;margin:10px 0">ไม่มีประวัติ</p>';
 };
 
-// ---------- ④ audit log ทั้งหมด ----------
 const ACTION_LABEL = {
   add_points:       '➕ ให้แต้ม',
   void:             '↩️ ยกเลิก',
   void_add:         '↩️ ยกเลิก',
-  use_redemption:   '🎟️ ใช้โค้ด',
+  redeem_use:       '🎟️ ใช้โค้ด',     // เพิ่มตัวนี้
+  redeem_create:    '🎁 สร้างโค้ด',   // เพิ่มตัวนี้
   open_pack:        '🎴 เปิดการ์ด',
-  create_redemption:'🎁 แลกการ์ด',
-  claim_reward:     '⭐ รับรางวัล',
   claim_set_reward: '⭐ รับรางวัล',
   reroll:           '🔀 Reroll',
 };
