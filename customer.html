@@ -96,6 +96,21 @@
   /* Toast */
   #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #333; color: #fff; padding: 10px 20px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 100; max-width: 90%; text-align: center; font-size: 14px; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* Point history modal */
+.history-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.history-modal.show { display: flex; }
+.history-box { background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 360px; max-height: 80vh; display: flex; flex-direction: column; animation: popIn .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes popIn { 0% { transform: scale(.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.history-box h3 { margin: 0 0 4px; font-size: 18px; text-align: center; }
+.history-sub { text-align: center; font-size: 13px; color: #666; margin-bottom: 14px; }
+.history-list { flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+.history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+.history-row:last-child { border-bottom: none; }
+.history-time { color: #555; font-size: 13px; }
+.history-delta { font-weight: 700; color: #16a34a; font-size: 16px; }
+.history-total { text-align: center; background: #fef3c7; color: #92400e; padding: 10px; border-radius: 10px; margin: 12px 0 0; font-size: 14px; }
+.history-total b { font-size: 18px; color: #b45309; }
+.history-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: 700; border-radius: 10px; border: none; background: #16a34a; color: #fff; cursor: pointer; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -162,6 +177,16 @@
   </div>
 </div>
 
+  <!-- Modal ประวัติการได้รับแต้ม -->
+<div id="historyModal" class="history-modal">
+  <div class="history-box">
+    <h3>🎉 ประวัติการได้รับแต้ม</h3>
+    <div class="history-sub" id="historySub"></div>
+    <div class="history-list" id="historyList"></div>
+    <div class="history-total" id="historyTotal"></div>
+    <button class="history-btn" onclick="closeHistoryModal()">รับทราบ</button>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script type="module">
@@ -220,9 +245,12 @@ window.login = async () => {
   localStorage.setItem('phone', phone);
   localStorage.setItem('pin', pin);
   me = data;
-  selectedIds.clear();
-  if (me.is_new) setTimeout(() => toast('🎉 ยินดีต้อนรับ! รับ 3 แต้มฟรี'), 300);
-  render();
+selectedIds.clear();
+
+checkPointHistory();
+
+if (me.is_new) setTimeout(() => toast('🎉 ยินดีต้อนรับ! รับ 3 แต้มฟรี'), 300);
+render();
 };
 
 window.logout = () => {
@@ -307,6 +335,9 @@ window.redeemCards = async () => {
 async function refresh() {
   const { data } = await sb.rpc('rpc_get_customer', { p_phone: me.phone, p_pin: pin });
   me = data; collection = null; render();
+
+  checkPointHistory();
+
   if (document.getElementById('tab-col').classList.contains('active')) loadCollection();
 }
 
@@ -475,7 +506,61 @@ function render() {
   renderCoupons(me.coupons || []);
   updateSelectBar(); updateRerollFab();
 }
+// ==========================================
+// ประวัติการได้รับแต้ม (แสดงตอนเปิดหน้า)
+// ==========================================
 
+window.closeHistoryModal = () => {
+  document.getElementById('historyModal').classList.remove('show');
+};
+
+async function checkPointHistory() {
+  if (!me || !me.phone) return;
+  const key = 'lastSeenPointAt_' + me.phone;
+  const lastSeen = localStorage.getItem(key); // ISO string หรือ null
+
+  const { data, error } = await sb.rpc('rpc_get_my_point_logs', {
+    p_phone: me.phone,
+    p_pin: pin,
+    p_since: lastSeen || null,
+  });
+  if (error || !data?.ok) return;
+
+  const rows = data.rows || [];
+  if (rows.length === 0) return; // ไม่มีแต้มใหม่ → ไม่เด้ง
+
+  showHistoryModal(rows);
+
+  // จำว่าเห็นรายการล่าสุดแล้ว (rows[0].at คือตัวล่าสุด)
+  localStorage.setItem(key, rows[0].at);
+}
+
+function showHistoryModal(rows) {
+  const total = rows.reduce((s, r) => s + (Number(r.delta) || 0), 0);
+  document.getElementById('historySub').textContent =
+    `มีรายการใหม่ ${rows.length} ครั้ง`;
+
+  const list = document.getElementById('historyList');
+  list.innerHTML = rows.map(r => {
+    const dt = new Date(r.at);
+    const timeStr = isNaN(dt) ? '-' : dt.toLocaleString('th-TH', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const actorLine = r.actor
+      ? `<div style="font-size:11px;color:#999">👤 ${r.actor}</div>` : '';
+    return `<div class="history-row">
+      <div><div class="history-time">${timeStr}</div>${actorLine}</div>
+      <div class="history-delta">+${r.delta}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('historyTotal').innerHTML =
+    `รวมที่ได้รับ: <b>+${total}</b> แต้ม`;
+
+  document.getElementById('historyModal').classList.add('show');
+}
+  
 // Auto-login
 const saved = localStorage.getItem('phone');
 if (saved) {
