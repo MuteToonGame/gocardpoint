@@ -101,6 +101,14 @@
   /* Toast */
   #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #333; color: #fff; padding: 10px 20px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 100; max-width: 90%; text-align: center; font-size: 14px; }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* Welcome modal */
+  #welcomeModal { z-index: 300; }
+  .welcome-emoji { font-size: 56px; text-align: center; line-height: 1.1; }
+  .welcome-title { font-size: 21px; font-weight: 800; text-align: center; margin: 8px 0 2px; color: #2b2b2b; }
+  .welcome-ok { text-align: center; color: #16a34a; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .welcome-sub { text-align: center; color: #666; font-size: 14px; line-height: 1.6; }
+  .welcome-gift { background: linear-gradient(135deg, #fff7d6, #fef3c7); border: 1px solid #fde68a; border-radius: 14px; padding: 14px; text-align: center; margin-top: 14px; color: #92400e; font-size: 14px; line-height: 1.6; }
+  .welcome-gift b { font-size: 24px; color: #b45309; }
   /* Point history modal */
 .history-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
 .history-modal.show { display: flex; }
@@ -197,6 +205,17 @@
     <button class="history-btn" onclick="closeHistoryModal()">รับทราบ</button>
   </div>
 </div>
+<!-- Modal ต้อนรับสมาชิกใหม่ -->
+<div id="welcomeModal" class="history-modal">
+  <div class="history-box">
+    <div class="welcome-emoji">🎉🍡</div>
+    <div class="welcome-title">ยินดีต้อนรับสู่การ์ดลูกชิ้น</div>
+    <div class="welcome-ok">✅ สมัครสมาชิกสำเร็จแล้ว</div>
+    <div class="welcome-sub">ขอบคุณที่มาเป็นส่วนหนึ่งของครอบครัวลูกชิ้นเรา<br>มีของขวัญต้อนรับรอคุณอยู่ค่ะ</div>
+    <div class="welcome-gift">🎁 รับฟรี <b>3 แต้ม</b><br>ใช้สุ่มการ์ดได้ 3 ใบ เริ่มสะสมได้เลย!</div>
+    <button class="history-btn" onclick="closeWelcome()">เริ่มสะสมการ์ดเลย 🍡</button>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script type="module">
@@ -273,7 +292,7 @@ selectedIds.clear();
 
 checkPointHistory();
 
-if (me.is_new) setTimeout(() => toast('🎉 ยินดีต้อนรับ! รับ 3 แต้มฟรี สุ่มการ์ดได้ 3 ใบ'), 300);
+if (me.is_new) showWelcome();
 render();
 };
 
@@ -553,6 +572,13 @@ function render() {
 // ==========================================
 // ประวัติการได้รับแต้ม (แสดงตอนเปิดหน้า)
 // ==========================================
+
+window.showWelcome = () => {
+  document.getElementById('welcomeModal').classList.add('show');
+};
+window.closeWelcome = () => {
+  document.getElementById('welcomeModal').classList.remove('show');
+};
 
 window.closeHistoryModal = () => {
   document.getElementById('historyModal').classList.remove('show');
