@@ -309,23 +309,13 @@ window.verifyCustomer = async () => {
   let isNew = false;
 
   const { data: look, error: lookErr } = await sb.rpc('rpc_lookup_customer', { p_phone: phone });
-  if (!lookErr && look) {
-    if (look.ok) {
-      customer = { name: look.name, points: look.points };
-    } else if (look.error === 'not_found') {
-      isNew = true;
-    }
-  }
-
-  if (!customer && !isNew) {
-    const { data: hist } = await sb.rpc('rpc_get_history', { p_phone: phone });
-    if (hist?.ok && hist.rows?.length > 0) {
-      customer = { name: null, points: null };
-    } else if (hist?.ok) {
-      isNew = true;
-    } else {
-      return toast('ตรวจสอบลูกค้าไม่สำเร็จ');
-    }
+  if (lookErr || !look) return toast('ตรวจสอบลูกค้าไม่สำเร็จ: ' + (lookErr?.message || 'ไม่มีข้อมูลตอบกลับ'));
+  if (look.ok) {
+    customer = { name: look.name, points: look.points };
+  } else if (look.error === 'not_found') {
+    isNew = true;
+  } else {
+    return toast('ตรวจสอบลูกค้าไม่สำเร็จ: ' + look.error);
   }
 
   giveState = {
