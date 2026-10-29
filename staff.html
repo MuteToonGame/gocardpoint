@@ -110,6 +110,34 @@
   .hist-row .row-action { font-weight: 600; }
   .hist-row .row-actor { color: #888; }
 
+  /* Audit Log (④) */
+  .log-controls { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px; }
+  .log-controls input { width: 100%; }
+  .log-controls button { width: auto; padding: 10px 14px; font-size: 14px; flex-shrink: 0; }
+  .log-summary { font-size: 12px; color: #666; margin-bottom: 8px; text-align: center; }
+  .log-list {
+    max-height: 500px; overflow-y: auto;
+    border: 1px solid #e5e7eb; border-radius: 10px;
+    padding: 4px 10px; background: #fff;
+  }
+  .log-row {
+    border-bottom: 1px solid #f3f4f6;
+    padding: 10px 2px;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 8px; font-size: 13px;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-main { min-width: 0; }
+  .log-time { color: #6b7280; font-size: 11px; margin-bottom: 3px; }
+  .log-phone { font-family: ui-monospace, SFMono-Regular, monospace; font-weight: 600; color: #1f2937; margin-right: 6px; }
+  .log-action { font-weight: 600; color: #1f2937; }
+  .log-delta { font-weight: 700; font-size: 14px; margin-left: 4px; }
+  .log-delta.plus { color: #16a34a; }
+  .log-delta.minus { color: #ef4444; }
+  .log-note { color: #666; font-size: 12px; margin-left: 4px; }
+  .log-actor { color: #7c3aed; font-size: 11px; font-weight: 600; text-align: right; white-space: nowrap; }
+  .log-empty { text-align: center; color: #999; padding: 20px; margin: 0; }
+
   /* Toast */
   #toast {
     position: fixed; bottom: 24px; left: 50%;
@@ -197,7 +225,7 @@
     <button onclick="useRedemption()" style="background:#16a34a">ตรวจสอบ & ใช้โค้ด</button>
   </div>
 
-  <!-- ③ ประวัติ -->
+  <!-- ③ ประวัติลูกค้า -->
   <div class="box">
     <div class="step-title">
       <div class="step-num">③</div>
@@ -209,14 +237,29 @@
     </div>
     <div id="hist" style="margin-top:10px"></div>
   </div>
+
+  <!-- ④ ประวัติทั้งหมด (Audit Log) -->
+  <div class="box">
+    <div class="step-title">
+      <div class="step-num">④</div>
+      <h3>ประวัติทั้งหมด (Audit Log)</h3>
+    </div>
+    <div class="log-controls">
+      <input id="logPhone" placeholder="กรองเบอร์ (ว่าง = ทั้งหมด)" inputmode="numeric" maxlength="10">
+      <button onclick="loadAllLogs()" style="background:#0ea5e9">🔄 โหลด</button>
+    </div>
+    <div class="log-summary" id="logSummary"></div>
+    <div id="allLogs" class="log-list">
+      <p class="log-empty">กด "🔄 โหลด" เพื่อดูประวัติ</p>
+    </div>
+  </div>
+
 </div>
 
 <div id="toast"></div>
-
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// ⚠️ กุญแจเดียวกับ customer.html
 const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy';
 
@@ -265,7 +308,6 @@ window.verifyCustomer = async () => {
   let customer = null;
   let isNew = false;
 
-  // 1) ลองใช้ rpc_lookup_customer ก่อน (ถ้ามี)
   const { data: look, error: lookErr } = await sb.rpc('rpc_lookup_customer', { p_phone: phone });
   if (!lookErr && look) {
     if (look.ok) {
@@ -275,7 +317,6 @@ window.verifyCustomer = async () => {
     }
   }
 
-  // 2) fallback: เช็คผ่านประวัติ
   if (!customer && !isNew) {
     const { data: hist } = await sb.rpc('rpc_get_history', { p_phone: phone });
     if (hist?.ok && hist.rows?.length > 0) {
@@ -404,7 +445,6 @@ window.voidLastAdd = async () => {
   btn.disabled = true;
   btn.textContent = 'กำลังยกเลิก...';
 
-  // ลอง rpc_void_last_add ก่อน
   let ok = false;
   const { data: voidData, error: voidErr } = await sb.rpc('rpc_void_last_add', {
     p_phone: giveState.result.phone,
@@ -412,7 +452,6 @@ window.voidLastAdd = async () => {
   });
   if (!voidErr && voidData?.ok) ok = true;
 
-  // fallback: ใช้ rpc_add_points ติดลบ (ถ้า RPC รับค่าลบ)
   if (!ok) {
     const { data: neg } = await sb.rpc('rpc_add_points', {
       p_phone: giveState.result.phone,
@@ -430,7 +469,6 @@ window.voidLastAdd = async () => {
   }
 
   toast('↩️ ยกเลิกแล้ว');
-  // กลับไปหน้าเลือก (ลูกค้าคนเดิม)
   giveState.result = null;
   clearInterval(voidTimer);
   document.getElementById('giveDone').classList.remove('show');
@@ -482,6 +520,82 @@ window.showHistory = async () => {
       <div><span class="row-action">${esc(r.action)}</span> <b>${esc(r.delta)}</b> ${esc(r.note || '')} <span class="row-actor">(${esc(r.actor || 'ลูกค้า')})</span></div>
     </div>`).join('')
     || '<p style="color:#999;text-align:center;margin:10px 0">ไม่มีประวัติ</p>';
+};
+
+// ---------- ④ audit log ทั้งหมด ----------
+const ACTION_LABEL = {
+  add_points:       '➕ ให้แต้ม',
+  void:             '↩️ ยกเลิก',
+  void_add:         '↩️ ยกเลิก',
+  use_redemption:   '🎟️ ใช้โค้ด',
+  open_pack:        '🎴 เปิดการ์ด',
+  create_redemption:'🎁 แลกการ์ด',
+  claim_reward:     '⭐ รับรางวัล',
+  claim_set_reward: '⭐ รับรางวัล',
+  reroll:           '🔀 Reroll',
+};
+
+window.loadAllLogs = async () => {
+  const phoneInput = document.getElementById('logPhone').value.trim();
+  const filterPhone = /^0\d{9}$/.test(phoneInput) ? phoneInput : null;
+
+  const el = document.getElementById('allLogs');
+  const summary = document.getElementById('logSummary');
+  el.innerHTML = '<p class="log-empty">กำลังโหลด...</p>';
+  summary.textContent = '';
+
+  const { data, error } = await sb.rpc('rpc_get_all_logs', {
+    p_limit: 200,
+    p_offset: 0,
+    p_filter_phone: filterPhone,
+  });
+
+  if (error || !data?.ok) {
+    el.innerHTML = `<p class="log-empty" style="color:#ef4444">โหลดไม่สำเร็จ: ${
+      esc(data?.error || error?.message || 'ไม่ทราบสาเหตุ')
+    }</p>`;
+    return;
+  }
+
+  const rows = data.rows || [];
+  if (rows.length === 0) {
+    el.innerHTML = '<p class="log-empty">ไม่มีข้อมูล</p>';
+    summary.textContent = filterPhone ? `ไม่พบประวัติของ ${filterPhone}` : 'ยังไม่มีประวัติ';
+    return;
+  }
+
+  summary.textContent = `แสดง ${rows.length} รายการล่าสุด${filterPhone ? ' · กรอง: ' + filterPhone : ''}`;
+
+  el.innerHTML = rows.map(r => {
+    const dt = new Date(r.at);
+    const timeStr = isNaN(dt) ? '-' : dt.toLocaleString('th-TH', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+
+    const deltaNum = Number(r.delta) || 0;
+    let deltaHtml = '';
+    if (deltaNum !== 0) {
+      const cls = deltaNum > 0 ? 'plus' : 'minus';
+      const sign = deltaNum > 0 ? '+' : '';
+      deltaHtml = `<span class="log-delta ${cls}">${sign}${deltaNum}</span>`;
+    }
+
+    const actionLabel = ACTION_LABEL[r.action] || r.action;
+
+    return `<div class="log-row">
+      <div class="log-main">
+        <div class="log-time">${esc(timeStr)}</div>
+        <div>
+          <span class="log-phone">${esc(r.phone || '-')}</span>
+          <span class="log-action">${esc(actionLabel)}</span>
+          ${deltaHtml}
+          ${r.note ? `<span class="log-note">· ${esc(r.note)}</span>` : ''}
+        </div>
+      </div>
+      <div class="log-actor">👤 ${esc(r.actor || 'ลูกค้า')}</div>
+    </div>`;
+  }).join('');
 };
 
 // ---------- auto session ----------
