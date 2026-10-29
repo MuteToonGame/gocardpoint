@@ -2,162 +2,361 @@
 <html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>การ์ดลูกชิ้น</title>
+<meta name="viewport" content="width=device-width,initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>โก้ลูกชิ้นกรอบ | การ์ดสะสม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; background: #fff8e7; color: #2b2b2b; -webkit-tap-highlight-color: transparent; }
-  h2 { margin: 0 0 8px; } h3 { margin: 20px 0 12px; font-size: 18px; }
-  #login { padding-top: 40px; text-align: center; } #login p { color: #666; margin-bottom: 16px; } #login input { margin-bottom: 10px; } #login button { width: 100%; margin-top: 8px; }
-  input { padding: 12px; font-size: 16px; width: 100%; border-radius: 10px; border: 1px solid #ddd; background: #fff; }
-  input:focus { outline: 2px solid #fbbf24; outline-offset: 1px; border-color: #fbbf24; }
-  button { padding: 12px 20px; font-size: 16px; font-weight: 600; border-radius: 10px; border: none; background: #ef4444; color: #fff; cursor: pointer; transition: transform .1s; }
-  button:active:not(:disabled) { transform: scale(.97); } button:disabled { background: #d1d5db; cursor: not-allowed; }
-  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .header h2 { margin: 0; font-size: 22px; } .header .logout-btn { background: #9ca3af; padding: 8px 14px; font-size: 14px; font-weight: 500; }
-  .points-box { background: linear-gradient(135deg, #fff7d6, #fef3c7); padding: 16px; border-radius: 14px; text-align: center; font-size: 20px; border: 1px solid #fde68a; }
-  .points-box b { font-size: 24px; color: #b45309; }
-  .open-wrap { text-align: center; margin: 16px 0; } #openBtn { width: 100%; padding: 14px; font-size: 17px; background: #ef4444; }
-  #main { padding-bottom: 100px; }
+  :root {
+    --primary: #D92B3A;
+    --primary-dark: #A81C28;
+    --secondary: #F5A623;
+    --secondary-light: #FEF0D4;
+    --bg: #FFF9F2;
+    --text-main: #2D2D2D;
+    --text-muted: #7A7A7A;
+    --card-bg: #FFFFFF;
+    --border: #EAEAEA;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(217, 43, 58, 0.12);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+    --radius-md: 12px;
+    --radius-lg: 20px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
-  .howto { background: #fff; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 14px; margin: 12px 0 0; font-size: 13px; line-height: 1.7; color: #555; }
-  .howto b { color: #b45309; }
-  .open-note { font-size: 12px; color: #888; margin-top: 8px; }
-  .hint { font-size: 13px; color: #666; margin: -6px 0 12px; }
-  button#rerollFab { width: auto; padding: 0 18px; border-radius: 28px; font-size: 15px; font-weight: 600; }
-  /* Tabs */
-  .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .tab { flex: 1; padding: 10px; text-align: center; font-size: 14px; font-weight: 600; color: #666; cursor: pointer; border-radius: 8px; transition: background .15s, color .15s; }
-  .tab.active { background: #fbbf24; color: #fff; }
-  .tab-content { display: none; } .tab-content.active { display: block; }
+  body { 
+    font-family: 'Kanit', -apple-system, BlinkMacSystemFont, sans-serif; 
+    max-width: 480px; 
+    margin: 0 auto; 
+    padding: 16px; 
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 50% 0%, #FFE5D9 0%, transparent 50%);
+    color: var(--text-main); 
+    min-height: 100vh;
+  }
+
+  h2, h3 { margin: 0; font-weight: 600; }
   
-  /* Inventory Grid */
-  #inventory { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  #inventory .empty, .empty { grid-column: 1 / -1; text-align: center; color: #999; padding: 20px; }
-  .card { position: relative; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; background: #fffdf7; border: 2px solid #e5e5e5; contain: layout style; user-select: none; transition: transform .08s; }
-  .card:active { transform: scale(.97); }
-  .card .art { flex: 1; display: grid; place-items: center; background-size: cover; background-position: center; background-repeat: no-repeat; min-height: 0; }
-  .card .emoji { font-size: 40px; line-height: 1; text-shadow: 0 2px 4px rgba(0,0,0,.12); }
-  .card .meta { background: rgba(255,255,255,.9); padding: 4px 6px 5px; text-align: center; border-top: 1px solid rgba(0,0,0,.05); }
-  .card .name { font-size: 11px; font-weight: 600; color: #2b2b2b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
-  .card .power { font-size: 10px; color: #b45309; margin-top: 1px; line-height: 1.2; }
-  .rarity-common { border-color: #d1d5db; } .rarity-rare { border-color: #3b82f6; } .rarity-epic { border-color: #a855f7; } .rarity-legendary { border-color: #eab308; box-shadow: 0 0 10px rgba(234,179,8,.45); }
-  .rarity-common .art { background: linear-gradient(135deg, #f9fafb, #f3f4f6); } .rarity-rare .art { background: linear-gradient(135deg, #eff6ff, #dbeafe); } .rarity-epic .art { background: linear-gradient(135deg, #faf5ff, #f3e8ff); } .rarity-legendary .art { background: linear-gradient(135deg, #fefce8, #fef3c7); }
-  .card.selected { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.25); }
-  .card.rarity-legendary.selected { box-shadow: 0 0 0 3px rgba(22,163,74,.25), 0 0 10px rgba(234,179,8,.45); }
-  .card .badge { position: absolute; top: 6px; right: 6px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #16a34a; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.25); transform: scale(0); opacity: 0; transition: transform .15s ease, opacity .15s ease; }
+  input { 
+    padding: 14px 16px; 
+    font-size: 16px; 
+    font-family: 'Kanit', sans-serif;
+    width: 100%; 
+    border-radius: var(--radius-md); 
+    border: 2px solid #E2E8F0; 
+    background: #FFF; 
+    transition: all 0.2s ease;
+    margin-bottom: 12px;
+  }
+  input:focus { 
+    outline: none; 
+    border-color: var(--primary); 
+    box-shadow: 0 0 0 4px rgba(217, 43, 58, 0.1); 
+  }
+  
+  button { 
+    padding: 14px 20px; 
+    font-size: 16px; 
+    font-family: 'Kanit', sans-serif;
+    font-weight: 600; 
+    border-radius: var(--radius-md); 
+    border: none; 
+    background: var(--primary); 
+    color: #fff; 
+    cursor: pointer; 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(217, 43, 58, 0.3);
+  }
+  button:active:not(:disabled) { transform: translateY(2px) scale(0.98); box-shadow: 0 2px 6px rgba(217, 43, 58, 0.2); } 
+  button:disabled { background: #CBD5E1; color: #94A3B8; box-shadow: none; cursor: not-allowed; }
+
+  #login { padding-top: 20vh; text-align: center; animation: fadeIn 0.5s ease; } 
+  #login h2 { font-size: 32px; color: var(--primary); text-shadow: 0 2px 4px rgba(217,43,58,0.1); margin-bottom: 8px; }
+  #login p { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; line-height: 1.6; } 
+  #login button { width: 100%; margin-top: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .header h2 { font-size: 24px; color: var(--primary); font-weight: 700; } 
+  .header .logout-btn { background: #FFF; color: var(--text-muted); padding: 8px 16px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+
+  .points-box { 
+    background: linear-gradient(135deg, #2D2D2D, #1A1A1A); 
+    padding: 20px; 
+    border-radius: var(--radius-lg); 
+    text-align: center; 
+    font-size: 18px; 
+    color: #FFF;
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .points-box::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(245,166,35,0.15) 0%, transparent 60%);
+  }
+  .points-box span { position: relative; z-index: 1; opacity: 0.8; font-size: 15px; }
+  .points-box b { position: relative; z-index: 1; font-size: 36px; color: var(--secondary); display: block; line-height: 1.2; margin-top: 4px; text-shadow: 0 2px 10px rgba(245,166,35,0.4); }
+
+  .howto { 
+    background: #FFF; 
+    border-left: 4px solid var(--secondary); 
+    border-radius: var(--radius-md); 
+    padding: 16px; 
+    margin: 0 0 20px; 
+    font-size: 13px; 
+    line-height: 1.8; 
+    color: var(--text-muted); 
+    box-shadow: var(--shadow-sm);
+  }
+  .howto b { color: var(--text-main); font-size: 15px; display: block; margin-bottom: 8px; }
+  .howto br { display: none; }
+  .howto::after { content: ''; display: block; clear: both; }
+
+  .open-wrap { text-align: center; margin: 0 0 24px; } 
+  #openBtn { 
+    width: 100%; 
+    padding: 18px; 
+    font-size: 18px; 
+    background: linear-gradient(135deg, var(--primary), #FF4B5C); 
+    border-radius: 50px;
+    box-shadow: 0 6px 20px rgba(217, 43, 58, 0.4);
+  }
+  .open-note { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+
+  .tabs { 
+    display: flex; 
+    background: #FFF; 
+    border-radius: 50px; 
+    padding: 6px; 
+    margin-bottom: 20px; 
+    box-shadow: var(--shadow-sm); 
+    border: 1px solid var(--border);
+  }
+  .tab { 
+    flex: 1; 
+    padding: 10px; 
+    text-align: center; 
+    font-size: 14px; 
+    font-weight: 500; 
+    color: var(--text-muted); 
+    cursor: pointer; 
+    border-radius: 40px; 
+    transition: all 0.3s ease; 
+  }
+  .tab.active { 
+    background: var(--primary); 
+    color: #FFF; 
+    box-shadow: 0 2px 8px rgba(217, 43, 58, 0.3); 
+    font-weight: 600;
+  }
+  .tab-content { display: none; animation: fadeIn 0.3s ease; } 
+  .tab-content.active { display: block; }
+
+  h3 { font-size: 18px; margin-bottom: 8px; }
+  .hint { font-size: 13px; color: var(--text-muted); margin: 0 0 16px; }
+  
+  #inventory { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  #inventory .empty, .empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 20px; background: #FFF; border-radius: var(--radius-md); border: 2px dashed var(--border); }
+  
+  .card { 
+    position: relative; 
+    aspect-ratio: 2/3; 
+    border-radius: var(--radius-md); 
+    overflow: hidden; 
+    cursor: pointer; 
+    display: flex; 
+    flex-direction: column; 
+    background: var(--card-bg); 
+    border: 2px solid #FFF; 
+    box-shadow: var(--shadow-sm); 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+  }
+  .card:active { transform: scale(0.95); }
+  .card .art { flex: 1; display: grid; place-items: center; background-size: cover; background-position: center; min-height: 0; position: relative; }
+  .card .emoji { font-size: 48px; line-height: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15)); z-index: 1; }
+  .card .meta { background: #FFF; padding: 6px 4px; text-align: center; border-top: 1px solid var(--border); z-index: 2; }
+  .card .name { font-size: 12px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .rarity-common { border-color: #E2E8F0; } 
+  .rarity-common .art { background: linear-gradient(180deg, #F8FAFC, #E2E8F0); }
+  .rarity-rare { border-color: #3B82F6; } 
+  .rarity-rare .art { background: linear-gradient(180deg, #EFF6FF, #BFDBFE); }
+  .rarity-rare { box-shadow: 0 0 12px rgba(59, 130, 246, 0.2); }
+  .rarity-epic { border-color: #A855F7; } 
+  .rarity-epic .art { background: linear-gradient(180deg, #FAF5FF, #E9D5FF); }
+  .rarity-epic { box-shadow: 0 0 12px rgba(168, 85, 247, 0.3); }
+  .rarity-legendary { border-color: #F5A623; } 
+  .rarity-legendary .art { background: linear-gradient(180deg, #FFFBEB, #FDE68A); }
+  .rarity-legendary { box-shadow: 0 0 20px rgba(245, 166, 35, 0.5); }
+  
+  .card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(217, 43, 58, 0.3), var(--shadow-md); transform: translateY(-4px); }
+  .card .badge { 
+    position: absolute; top: -6px; right: -6px; min-width: 24px; height: 24px; padding: 0 6px; 
+    border-radius: 12px; background: var(--primary); color: #FFF; font-size: 13px; font-weight: 700; 
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(217,43,58,0.4); 
+    transform: scale(0); opacity: 0; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10;
+  }
   .card.selected .badge { transform: scale(1); opacity: 1; }
-  
-  /* Select bar */
-  .select-bar { position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 120%); width: 100%; max-width: 480px; background: #fff; box-shadow: 0 -4px 16px rgba(0,0,0,.12); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 12px; z-index: 50; transition: transform .25s ease; }
+
+  .select-bar { 
+    position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 120%); width: 100%; max-width: 480px; 
+    background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08); padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); 
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; z-index: 50; 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 20px 20px 0 0;
+  }
   .select-bar.show { transform: translate(-50%, 0); }
-  .select-info { font-size: 13px; color: #555; line-height: 1.35; flex: 1; min-width: 0; } .select-info b { color: #16a34a; font-size: 15px; }
+  .select-info { font-size: 13px; color: var(--text-muted); line-height: 1.4; flex: 1; min-width: 0; } 
+  .select-info b { color: var(--primary); font-size: 16px; }
   .select-actions { display: flex; gap: 8px; flex-shrink: 0; }
-  .select-actions .btn-ghost { background: #f3f4f6; color: #374151; padding: 10px 14px; font-size: 14px; font-weight: 500; }
-  .select-actions #redeemBtn { background: #16a34a; padding: 10px 16px; font-size: 14px; }
-  
-  /* Coupons */
-  .coupon { background: #fff; border: 2px dashed #16a34a; border-radius: 12px; padding: 14px; margin: 10px 0; text-align: center; }
-  .coupon .code { font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #16a34a; margin: 4px 0; font-family: ui-monospace, SFMono-Regular, monospace; }
-  .coupon .meta { font-size: 12px; color: #666; } .coupon .count { font-weight: 600; }
-  .coupon .label { font-size: 15px; font-weight: 700; color: #16a34a; margin: 6px 0; }
-  
-  /* Collection */
-  .set-card { background: #fff; border-radius: 14px; padding: 14px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,.06); border: 2px solid #e5e5e5; }
-  .set-card.complete { border-color: #eab308; box-shadow: 0 0 12px rgba(234,179,8,.3); }
-  .set-card.ultimate { background: linear-gradient(135deg, #fefce8, #fff7d6); border-color: #eab308; box-shadow: 0 4px 12px rgba(234,179,8,.35); }
-  .set-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .set-title { font-weight: 700; font-size: 16px; } .set-progress-text { font-size: 14px; color: #666; font-weight: 600; }
-  .progress-bar { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin: 6px 0 12px; }
-  .progress-fill { height: 100%; background: #16a34a; border-radius: 4px; transition: width .3s; }
-  .set-cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 12px; }
-  .set-card-mini { aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; position: relative; border: 2px solid #e5e5e5; background: #f9fafb; }
-  .set-card-mini.owned { background: #fff; }
-  .set-card-mini.rarity-common { border-color: #d1d5db; } .set-card-mini.rarity-rare { border-color: #3b82f6; } .set-card-mini.rarity-epic { border-color: #a855f7; } .set-card-mini.rarity-legendary { border-color: #eab308; }
-  .set-card-mini.missing { color: #d1d5db; background: #f3f4f6; }
-  .set-card-mini .count-badge { position: absolute; top: 2px; right: 2px; background: #16a34a; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 8px; min-width: 16px; text-align: center; }
-  .set-card-mini .used-mark { position: absolute; bottom: 2px; right: 2px; font-size: 12px; color: #16a34a; font-weight: 700; }
-  .set-reward { background: #fef3c7; border-radius: 8px; padding: 8px 10px; font-size: 13px; color: #92400e; margin-bottom: 10px; text-align: center; }
-  .set-reward.claimed { background: #f3f4f6; color: #6b7280; }
-  .set-action-btn { width: 100%; padding: 12px; font-size: 15px; }
-  .set-action-btn.claim { background: #16a34a; } .set-action-btn.claimed { background: #d1d5db; }
+  .select-actions .btn-ghost { background: #F1F5F9; color: var(--text-main); padding: 10px 14px; font-size: 14px; font-weight: 500; box-shadow: none; }
+  .select-actions #redeemBtn { background: #10B981; padding: 10px 16px; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
 
-  /* Reroll FAB */
-  #rerollFab { position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #a855f7; color: #fff; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(168,85,247,.4); z-index: 40; display: none; align-items: center; justify-content: center; padding: 0; }
-  #rerollFab.show { display: flex; }
+  .coupon { 
+    background: #FFF; border-radius: var(--radius-md); padding: 20px; margin: 12px 0; text-align: center; 
+    box-shadow: var(--shadow-sm); position: relative; border: 2px dashed var(--secondary);
+  }
+  .coupon::before, .coupon::after {
+    content: ''; position: absolute; top: 50%; width: 20px; height: 20px; background: var(--bg); border-radius: 50%;
+    transform: translateY(-50%); border: 2px dashed var(--secondary);
+  }
+  .coupon::before { left: -12px; clip-path: inset(0 0 0 50%); }
+  .coupon::after { right: -12px; clip-path: inset(0 50% 0 0); }
   
-  /* Modal */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 60; display: none; align-items: center; justify-content: center; padding: 20px; }
-  .modal-overlay.show { display: flex; }
-  .modal-box { background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
-  .modal-box h3 { margin-top: 0; }
-  .reroll-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
-  .reroll-item { aspect-ratio: 1/1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 3px solid transparent; position: relative; padding: 4px; }
-  .reroll-item.selected { border-color: #a855f7; }
-  .reroll-item .emoji { font-size: 28px; } .reroll-item .name { font-size: 9px; margin-top: 2px; text-align: center; }
-  .reroll-item .count-badge { position: absolute; top: 2px; right: 2px; background: #16a34a; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 8px; }
-  .modal-actions { display: flex; gap: 8px; margin-top: 12px; } .modal-actions button { flex: 1; }
+  .coupon .code { font-size: 32px; font-weight: 700; letter-spacing: 4px; color: var(--primary); margin: 8px 0; font-family: ui-monospace, SFMono-Regular, monospace; }
+  .coupon .meta { font-size: 12px; color: var(--text-muted); } 
+  .coupon .label { font-size: 16px; font-weight: 600; color: var(--text-main); margin: 6px 0; }
 
-  /* Toast */
-  #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #333; color: #fff; padding: 10px 20px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 100; max-width: 90%; text-align: center; font-size: 14px; }
+  .set-card { background: #FFF; border-radius: var(--radius-md); padding: 16px; margin: 12px 0; box-shadow: var(--shadow-sm); border: 2px solid #FFF; transition: all 0.3s; }
+  .set-card.complete { border-color: var(--secondary); box-shadow: 0 4px 16px rgba(245, 166, 35, 0.2); }
+  .set-card.ultimate { background: linear-gradient(135deg, #FFFBEB, #FFF); border-color: var(--secondary); box-shadow: 0 4px 20px rgba(245, 166, 35, 0.3); }
+  .set-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .set-title { font-weight: 600; font-size: 16px; color: var(--text-main); } 
+  .set-progress-text { font-size: 14px; color: var(--primary); font-weight: 700; background: rgba(217,43,58,0.1); padding: 4px 10px; border-radius: 20px; }
+  .progress-bar { height: 8px; background: #F1F5F9; border-radius: 4px; overflow: hidden; margin-bottom: 16px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--secondary), #FFD166); border-radius: 4px; transition: width 0.5s ease; }
+  
+  .set-cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 16px; }
+  .set-card-mini { aspect-ratio: 1/1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; position: relative; border: 2px solid var(--border); background: #F8FAFC; }
+  .set-card-mini.owned { background: #FFF; box-shadow: var(--shadow-sm); }
+  .set-card-mini.missing { color: #CBD5E1; background: #F1F5F9; }
+  .set-card-mini .count-badge { position: absolute; top: -4px; right: -4px; background: var(--primary); color: #FFF; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 2px solid #FFF; }
+  .set-card-mini .used-mark { position: absolute; bottom: 2px; right: 2px; font-size: 12px; color: #10B981; font-weight: 700; text-shadow: 0 0 2px #FFF; }
+  
+  .set-reward { background: var(--secondary-light); border-radius: 8px; padding: 10px; font-size: 14px; color: #92400E; margin-bottom: 12px; text-align: center; font-weight: 500; }
+  .set-reward.claimed { background: #F1F5F9; color: var(--text-muted); }
+  .set-action-btn { width: 100%; padding: 14px; font-size: 15px; border-radius: 8px; }
+  .set-action-btn.claim { background: #10B981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); } 
+  .set-action-btn.claimed { background: #E2E8F0; color: #94A3B8; box-shadow: none; }
+
+  #rerollFab { 
+    position: fixed; bottom: 90px; right: 20px; width: 60px; height: 60px; border-radius: 50%; 
+    background: #A855F7; color: #FFF; border: none; font-size: 24px; cursor: pointer; 
+    box-shadow: 0 6px 16px rgba(168, 85, 247, 0.4); z-index: 40; display: none; align-items: center; justify-content: center; padding: 0; 
+    transition: all 0.2s;
+  }
+  #rerollFab:active { transform: scale(0.9); }
+  #rerollFab.show { display: flex; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 60; display: none; align-items: center; justify-content: center; padding: 20px; opacity: 0; transition: opacity 0.2s; }
+  .modal-overlay.show { display: flex; opacity: 1; }
+  .modal-box { background: #FFF; border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .modal-overlay.show .modal-box { transform: translateY(0); }
+  .modal-box h3 { margin-bottom: 8px; font-size: 20px; color: var(--primary); }
+  
+  .reroll-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+  .reroll-item { aspect-ratio: 1/1; border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border: 3px solid transparent; position: relative; padding: 4px; background: #F8FAFC; transition: all 0.2s; }
+  .reroll-item.selected { border-color: #A855F7; background: #FAF5FF; box-shadow: 0 0 12px rgba(168, 85, 247, 0.2); }
+  .reroll-item .emoji { font-size: 32px; } 
+  .reroll-item .name { font-size: 10px; margin-top: 4px; text-align: center; font-weight: 500; line-height: 1.2; }
+  .reroll-item .count-badge { position: absolute; top: -6px; right: -6px; background: #10B981; color: #FFF; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 10px; border: 2px solid #FFF; }
+  
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; } 
+  .modal-actions button { flex: 1; }
+
+  #toast { 
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); 
+    background: rgba(45, 45, 45, 0.95); backdrop-filter: blur(4px); color: #FFF; padding: 12px 24px; 
+    border-radius: 50px; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    z-index: 100; max-width: 90%; text-align: center; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md);
+  }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  /* Welcome modal */
-  #welcomeModal { z-index: 300; }
-  .welcome-emoji { font-size: 56px; text-align: center; line-height: 1.1; }
-  .welcome-title { font-size: 21px; font-weight: 800; text-align: center; margin: 8px 0 2px; color: #2b2b2b; }
-  .welcome-ok { text-align: center; color: #16a34a; font-weight: 700; font-size: 15px; margin-bottom: 8px; }
-  .welcome-sub { text-align: center; color: #666; font-size: 14px; line-height: 1.6; }
-  .welcome-gift { background: linear-gradient(135deg, #fff7d6, #fef3c7); border: 1px solid #fde68a; border-radius: 14px; padding: 14px; text-align: center; margin-top: 14px; color: #92400e; font-size: 14px; line-height: 1.6; }
-  .welcome-gift b { font-size: 24px; color: #b45309; }
-  /* Point history modal */
-.history-modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
-.history-modal.show { display: flex; }
-.history-box { background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 360px; max-height: 80vh; display: flex; flex-direction: column; animation: popIn .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-@keyframes popIn { 0% { transform: scale(.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-.history-box h3 { margin: 0 0 4px; font-size: 18px; text-align: center; }
-.history-sub { text-align: center; font-size: 13px; color: #666; margin-bottom: 14px; }
-.history-list { flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
-.history-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
-.history-row:last-child { border-bottom: none; }
-.history-time { color: #555; font-size: 13px; }
-.history-delta { font-weight: 700; color: #16a34a; font-size: 16px; }
-.history-total { text-align: center; background: #fef3c7; color: #92400e; padding: 10px; border-radius: 10px; margin: 12px 0 0; font-size: 14px; }
-.history-total b { font-size: 18px; color: #b45309; }
-.history-btn { width: 100%; padding: 12px; font-size: 16px; font-weight: 700; border-radius: 10px; border: none; background: #16a34a; color: #fff; cursor: pointer; margin-top: 12px; }
+
+  .history-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .history-modal.show { display: flex; }
+  .history-box { background: #FFF; border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 360px; max-height: 80vh; display: flex; flex-direction: column; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: var(--shadow-lg); }
+  .history-box h3 { margin: 0 0 8px; font-size: 20px; text-align: center; color: var(--primary); }
+  .history-sub { text-align: center; font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+  .history-list { flex: 1; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+  .history-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .history-row:last-child { border-bottom: none; }
+  .history-time { color: var(--text-main); font-size: 13px; font-weight: 500; }
+  .history-delta { font-weight: 700; color: #10B981; font-size: 18px; background: rgba(16, 185, 129, 0.1); padding: 4px 10px; border-radius: 8px; }
+  .history-total { text-align: center; background: var(--secondary-light); color: #92400E; padding: 16px; border-radius: var(--radius-md); margin: 16px 0 0; font-size: 14px; line-height: 1.6; }
+  .history-total b { font-size: 20px; color: var(--primary); }
+  .history-btn { width: 100%; padding: 14px; font-size: 16px; font-weight: 600; border-radius: var(--radius-md); border: none; background: var(--primary); color: #FFF; cursor: pointer; margin-top: 16px; box-shadow: 0 4px 12px rgba(217, 43, 58, 0.3); }
+  
+  .welcome-emoji { font-size: 64px; text-align: center; line-height: 1.1; margin-bottom: 12px; animation: bounce 2s infinite; }
+  .welcome-title { font-size: 22px; font-weight: 700; text-align: center; margin: 0 0 8px; color: var(--primary); }
+  .welcome-ok { text-align: center; color: #10B981; font-weight: 600; font-size: 15px; margin-bottom: 12px; }
+  .welcome-sub { text-align: center; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+  .welcome-gift { background: linear-gradient(135deg, var(--secondary-light), #FFF); border: 2px dashed var(--secondary); border-radius: var(--radius-md); padding: 20px; text-align: center; margin-top: 20px; color: #92400E; font-size: 15px; line-height: 1.6; }
+  .welcome-gift b { font-size: 28px; color: var(--primary); display: block; margin: 4px 0; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="login">
-    <h2>🍡 การ์ดลูกชิ้น</h2>
-    <p>ใส่เบอร์โทรและ PIN 4 หลัก<br><span style="font-size:13px">ครั้งแรก? ใส่เบอร์ที่ให้ไว้กับร้าน แล้วตั้ง PIN เองได้เลย</span></p>
-    <input id="phone" placeholder="0812345678" inputmode="numeric">
+    <div style="font-size: 72px; margin-bottom: 16px; filter: drop-shadow(0 8px 16px rgba(217,43,58,0.2));">🍡</div>
+    <h2>โก้ลูกชิ้นกรอบ</h2>
+    <p>เข้าสู่ระบบเพื่อสะสมการ์ดและรับสิทธิพิเศษ<br><span style="font-size:13px; color:#94A3B8">ครั้งแรก? ใส่เบอร์ที่แจ้งกับร้าน แล้วตั้ง PIN 4 หลักได้เลย</span></p>
+    <input id="phone" placeholder="เบอร์โทรศัพท์ (เช่น 0812345678)" inputmode="numeric">
     <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN 4 หลัก">
-    <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="ใส่ PIN อีกครั้งเพื่อยืนยัน" style="display:none">
+    <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="ยืนยัน PIN อีกครั้ง" style="display:none">
     <button onclick="login()">เข้าสู่ระบบ</button>
   </div>
 
   <div id="main" style="display:none">
     <div class="header">
-      <h2>สวัสดี 👋</h2>
-      <button class="logout-btn" onclick="logout()">ออก</button>
+      <h2>🍡 โก้ลูกชิ้นกรอบ</h2>
+      <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
     </div>
-    <div class="points-box">⭐ แต้ม: <b id="points">0</b></div>
-    <div class="howto"><b>🍡 วิธีสะสม</b><br>• ซื้อครบ 40 บาท ได้ 1 แต้ม<br>• ซื้อครบ 100 บาท แถมลูกชิ้นฟรี 1 ไม้ และได้แต้มเพิ่มอีก 1 แต้ม<br>• ใช้ 1 แต้ม สุ่มการ์ด 1 ใบ<br>• เก็บการ์ดครบ 5 ใบ แลกลูกชิ้นฟรี 1 ไม้ (มูลค่า 10 บาท)</div>
+    
+    <div class="points-box">
+      <span>แต้มสะสมของคุณ</span>
+      <b id="points">0</b>
+    </div>
+    
+    <div class="howto">
+      <b>🎁 วิธีสะสมแต้มและสิทธิพิเศษ</b>
+      • ซื้อครบ 40 บาท รับ 1 แต้ม<br>
+      • ซื้อครบ 100 บาท แถมลูกชิ้นฟรี 1 ไม้ + แต้มเพิ่ม 1 แต้ม<br>
+      • ใช้ 1 แต้ม สุ่มการ์ดสะสม 1 ใบ<br>
+      • เก็บการ์ดครบ 5 ใบ แลกลูกชิ้นฟรี 1 ไม้ (มูลค่า 10 บาท)
+    </div>
+    
     <div class="open-wrap">
-      <button onclick="openPack()" id="openBtn">🎴 ใช้ 1 แต้ม สุ่มการ์ด 1 ใบ</button>
-      <div class="open-note">การ์ดเป็นของสะสม ไม่ใช่ลูกชิ้นจริง · เก็บครบ 5 ใบ ค่อยแลกลูกชิ้นฟรี</div>
+      <button onclick="openPack()" id="openBtn">🎴 ใช้ 1 แต้ม สุ่มการ์ด</button>
+      <div class="open-note">การ์ดเป็นของสะสมสำหรับแลกสิทธิ์ · เก็บครบ 5 ใบ แลกลูกชิ้นฟรี</div>
     </div>
 
     <div class="tabs">
-      <div class="tab active" data-tab="inv">การ์ด</div>
+      <div class="tab active" data-tab="inv">🎴 การ์ดของฉัน</div>
       <div class="tab" data-tab="col">📖 ชุดสะสม</div>
       <div class="tab" data-tab="cp">🎟️ คูปอง</div>
     </div>
 
     <div id="tab-inv" class="tab-content active">
-      <h3>การ์ดของฉัน (<span id="invCount">0</span> ใบ)</h3>
-      <p class="hint">แตะเลือกการ์ด 5 ใบ เพื่อแลกลูกชิ้นฟรี 1 ไม้ (10 บาท)</p>
+      <h3>การ์ดในมือ (<span id="invCount">0</span> ใบ)</h3>
+      <p class="hint">💡 แตะเลือกการ์ด 5 ใบ เพื่อแลกลูกชิ้นฟรี 1 ไม้</p>
       <div id="inventory"></div>
     </div>
 
@@ -166,7 +365,7 @@
     </div>
 
     <div id="tab-cp" class="tab-content">
-      <h3>🎟️ คูปองของฉัน (<span id="cpCount">0</span>)</h3>
+      <h3>คูปองของคุณ (<span id="cpCount">0</span> ใบ)</h3>
       <div id="coupons"></div>
     </div>
   </div>
@@ -176,48 +375,50 @@
   <div class="select-info" id="selInfo">เลือกแล้ว 0/5 ใบ</div>
   <div class="select-actions">
     <button class="btn-ghost" onclick="clearSelection()">ยกเลิก</button>
-    <button id="redeemBtn" onclick="redeemCards()" disabled>🎟️ แลกลูกชิ้นฟรี</button>
+    <button id="redeemBtn" onclick="redeemCards()" disabled>🎟️ แลกลูกชิ้น</button>
   </div>
 </div>
 
-<button id="rerollFab" onclick="openRerollModal()">🔀 สุ่มการ์ดซ้ำใหม่</button>
+<button id="rerollFab" onclick="openRerollModal()">🔀</button>
 
 <div id="rerollModal" class="modal-overlay">
   <div class="modal-box">
     <h3>🔀 สุ่มการ์ดซ้ำใหม่</h3>
-    <p style="font-size:13px;color:#666;margin-top:0">เลือกการ์ดซ้ำ 1 ใบ → เปลี่ยนเป็นการ์ดใบใหม่แบบสุ่ม<br>สุ่มได้ 1 ครั้งต่อรอบ · รอบใหม่ 09:00 · 13:00 · 17:00 · 21:00 น.</p>
-    <div id="rerollTimer" style="font-size:14px;font-weight:600;color:#7c3aed;margin:8px 0"></div>
+    <p style="font-size:13px;color:#666;margin-top:0;line-height:1.6">เลือกการ์ดซ้ำ 1 ใบ เพื่อเปลี่ยนเป็นการ์ดใบใหม่แบบสุ่ม<br><span style="color:#A855F7;font-weight:600">สุ่มได้ 1 ครั้งต่อรอบ (09:00 / 13:00 / 17:00 / 21:00 น.)</span></p>
+    <div id="rerollTimer" style="font-size:15px;font-weight:600;color:#A855F7;margin:12px 0;text-align:center;background:#FAF5FF;padding:10px;border-radius:8px;"></div>
     <div id="rerollList" class="reroll-list"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" style="background:#f3f4f6;color:#374151" onclick="closeRerollModal()">ปิด</button>
-      <button id="rerollConfirm" style="background:#a855f7" onclick="doReroll()" disabled>ยืนยัน</button>
+      <button class="btn-ghost" style="background:#F1F5F9;color:#475569;box-shadow:none;" onclick="closeRerollModal()">ปิด</button>
+      <button id="rerollConfirm" style="background:#A855F7;box-shadow:0 4px 12px rgba(168,85,247,0.3);" onclick="doReroll()" disabled>ยืนยันการสุ่ม</button>
     </div>
   </div>
 </div>
 
-  <!-- Modal ประวัติการได้รับแต้ม -->
 <div id="historyModal" class="history-modal">
   <div class="history-box">
-    <h3>🎉 คุณได้แต้มใหม่</h3>
+    <h3>🎉 แต้มเข้าสู่ระบบ</h3>
     <div class="history-sub" id="historySub"></div>
     <div class="history-list" id="historyList"></div>
     <div class="history-total" id="historyTotal"></div>
     <button class="history-btn" onclick="closeHistoryModal()">รับทราบ</button>
   </div>
 </div>
-<!-- Modal ต้อนรับสมาชิกใหม่ -->
+
 <div id="welcomeModal" class="history-modal">
-  <div class="history-box">
+  <div class="history-box" style="text-align:center;">
     <div class="welcome-emoji">🎉🍡</div>
-    <div class="welcome-title">ยินดีต้อนรับสู่การ์ดลูกชิ้น</div>
+    <div class="welcome-title">ยินดีต้อนรับ!</div>
     <div class="welcome-ok">✅ สมัครสมาชิกสำเร็จแล้ว</div>
-    <div class="welcome-sub">ขอบคุณที่มาเป็นส่วนหนึ่งของครอบครัวลูกชิ้นเรา<br>มีของขวัญต้อนรับรอคุณอยู่ค่ะ</div>
-    <div class="welcome-gift">🎁 รับฟรี <b>3 แต้ม</b><br>ใช้สุ่มการ์ดได้ 3 ใบ เริ่มสะสมได้เลย!</div>
-    <button class="history-btn" onclick="closeWelcome()">เริ่มสะสมการ์ดเลย 🍡</button>
+    <div class="welcome-sub">ขอบคุณที่มาเป็นส่วนหนึ่งของครอบครัว<br>โก้ลูกชิ้นกรอบ ครับ</div>
+    <div class="welcome-gift">
+      🎁 ของขวัญต้อนรับ<br>
+      รับฟรี <b>3 แต้ม</b>
+      <span style="font-size:13px;display:block;margin-top:8px;">ใช้สุ่มการ์ดได้เลย 3 ใบ!</span>
+    </div>
+    <button class="history-btn" onclick="closeWelcome()" style="background:linear-gradient(135deg, var(--primary), var(--primary-dark));">เริ่มสะสมการ์ดเลย 🍡</button>
   </div>
 </div>
 <div id="toast"></div>
-
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -265,7 +466,7 @@ document.querySelectorAll('.tab').forEach(t => {
 // Auth
 window.login = async () => {
   const phone = document.getElementById('phone').value.trim();
-  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
+  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์โทรไม่ถูกต้อง');
   pin = document.getElementById('pin').value.trim();
   if (!/^\d{4}$/.test(pin)) return toast('PIN ต้องเป็นเลข 4 หลัก');
   if (setupMode) {
@@ -288,12 +489,12 @@ window.login = async () => {
   localStorage.setItem('phone', phone);
   localStorage.setItem('pin', pin);
   me = data;
-selectedIds.clear();
+  selectedIds.clear();
 
-checkPointHistory();
+  checkPointHistory();
 
-if (me.is_new) showWelcome();
-render();
+  if (me.is_new) showWelcome();
+  render();
 };
 
 window.logout = () => {
@@ -348,9 +549,9 @@ function updateSelectBar() {
   const usable = Math.floor(n / CARDS_PER_SAUSAGE) * CARDS_PER_SAUSAGE;
   const leftover = n - usable;
   const rewards = usable / CARDS_PER_SAUSAGE;
-  if (n < CARDS_PER_SAUSAGE) info.innerHTML = `เลือกแล้ว <b>${n}/${CARDS_PER_SAUSAGE}</b> ใบ · ครบ ${CARDS_PER_SAUSAGE} แลกลูกชิ้นฟรี`;
+  if (n < CARDS_PER_SAUSAGE) info.innerHTML = `เลือกแล้ว <b>${n}/${CARDS_PER_SAUSAGE}</b> ใบ · ครบ ${CARDS_PER_SAUSAGE} แลกได้เลย`;
   else if (leftover === 0) info.innerHTML = `ใช้ <b>${usable}</b> ใบ → แลกลูกชิ้นฟรี ${rewards} ไม้`;
-  else info.innerHTML = `ใช้ <b>${usable}</b> ใบ → แลกลูกชิ้นฟรี ${rewards} ไม้ <span style="color:#999">(เหลือ ${leftover} ไม่ใช้)</span>`;
+  else info.innerHTML = `ใช้ <b>${usable}</b> ใบ → แลกลูกชิ้นฟรี ${rewards} ไม้ <span style="color:#94A3B8; font-size:12px;">(เหลือ ${leftover} ใบ)</span>`;
   btn.disabled = n < CARDS_PER_SAUSAGE;
 }
 
@@ -403,15 +604,15 @@ function renderCoupons(cps) {
   const cpCountEl = document.getElementById('cpCount');
   const couponsEl = document.getElementById('coupons');
   cpCountEl.textContent = cps.length;
-  if (cps.length === 0) { couponsEl.innerHTML = '<p class="coupons-empty">ยังไม่มีคูปองที่ยังไม่ได้ใช้</p>'; return; }
+  if (cps.length === 0) { couponsEl.innerHTML = '<p class="empty">ยังไม่มีคูปองที่ยังไม่ได้ใช้</p>'; return; }
   couponsEl.innerHTML = cps.map(k => {
-    const countText = k.label ? `<div class="label">${escapeHtml(k.label)}</div>` : `<div class="count">🍡 ลูกชิ้นฟรี <b>${k.cards / CARDS_PER_SAUSAGE}</b> ไม้</div>`;
+    const countText = k.label ? `<div class="label">${escapeHtml(k.label)}</div>` : `<div class="label">🍡 ลูกชิ้นฟรี <b>${k.cards / CARDS_PER_SAUSAGE}</b> ไม้</div>`;
     return `<div class="coupon">${countText}<div class="code">${escapeHtml(k.code)}</div><div class="meta">แสดงโค้ดนี้ที่ร้านเพื่อรับลูกชิ้น · ${new Date(k.created_at).toLocaleDateString('th-TH')}</div></div>`;
   }).join('');
 }
 
 function renderCollection() {
-  if (!collection || collection.length === 0) { collectionEl.innerHTML = '<p class="empty">ยังไม่มีข้อมูลชุด</p>'; return; }
+  if (!collection || collection.length === 0) { collectionEl.innerHTML = '<p class="empty">ยังไม่มีข้อมูลชุดสะสม</p>'; return; }
   collectionEl.innerHTML = collection.map(set => {
     const pct = set.total > 0 ? Math.round((set.owned / set.total) * 100) : 0;
     const isComplete = set.owned >= set.total;
@@ -423,7 +624,7 @@ function renderCollection() {
         const used = c.count === 0;
         const badge = c.count > 0 ? `<span class="count-badge">×${c.count}</span>` : '';
         const usedMark = used ? `<span class="used-mark">✓</span>` : '';
-        return `<div class="set-card-mini owned rarity-${c.rarity}"><span style="${used ? 'opacity:.4' : ''}">${c.emoji}</span>${badge}${usedMark}</div>`;
+        return `<div class="set-card-mini owned rarity-${c.rarity}"><span style="${used ? 'opacity:.3' : ''}">${c.emoji}</span>${badge}${usedMark}</div>`;
       }).join('') + '</div>';
     }
     let actionHTML;
@@ -433,7 +634,7 @@ function renderCollection() {
     } else if (isComplete) {
       actionHTML = `<div class="set-reward">🎁 ${escapeHtml(set.reward_text)}</div><button class="set-action-btn claim" onclick="claimSet('${set.code}')">✨ รับรางวัล!</button>`;
     } else {
-      actionHTML = `<div class="set-reward">🎁 ${escapeHtml(set.reward_text)}</div><button class="set-action-btn claimed" disabled>ยังไม่ครบ</button>`;
+      actionHTML = `<div class="set-reward">🎁 ${escapeHtml(set.reward_text)}</div><button class="set-action-btn claimed" disabled>สะสมให้ครบเพื่อรับรางวัล</button>`;
     }
     return `<div class="set-card ${cls}">
       <div class="set-header"><div class="set-title">${set.emoji} ${escapeHtml(set.name)}${isComplete ? ' ⭐' : ''}</div><div class="set-progress-text">${set.owned}/${set.total}</div></div>
@@ -468,7 +669,7 @@ function tickReroll() {
     el.textContent = `⏳ สุ่มได้อีกครั้งใน ${p(Math.floor(s / 3600))}:${p(Math.floor(s % 3600 / 60))}:${p(s % 60)}`;
     btn.disabled = true;
   } else {
-    el.textContent = '✅ รอบนี้สุ่มได้ 1 ครั้ง';
+    el.textContent = '✅ พร้อมสุ่มรอบใหม่แล้ว!';
     btn.disabled = !selectedReroll;
   }
 }
@@ -545,7 +746,7 @@ function render() {
   document.getElementById('points').textContent = me.points;
   document.getElementById('invCount').textContent = me.inventory.length;
   const openBtn = document.getElementById('openBtn');
-  openBtn.textContent = `🎴 ใช้ ${POINTS_PER_PACK} แต้ม สุ่มการ์ด 1 ใบ`;
+  openBtn.textContent = `🎴 ใช้ ${POINTS_PER_PACK} แต้ม สุ่มการ์ด`;
   openBtn.disabled = me.points < POINTS_PER_PACK;
 
   const validIds = new Set(me.inventory.map(i => i.inventory_id));
@@ -557,7 +758,7 @@ function render() {
     return (b.power || 0) - (a.power || 0);
   });
 
-  if (sorted.length === 0) inventoryEl.innerHTML = '<p class="empty">ยังไม่มีการ์ด · ซื้อครบ 40 บาทรับ 1 แต้ม แล้วกดสุ่มการ์ด</p>';
+  if (sorted.length === 0) inventoryEl.innerHTML = '<p class="empty">ยังไม่มีการ์ดสะสม<br>ซื้อครบ 40 บาทรับ 1 แต้ม แล้วกลับมากดสุ่มการ์ดได้เลย!</p>';
   else {
     const selIdx = new Map(); let n = 1;
     for (const id of selectedIds) selIdx.set(id, n++);
@@ -569,9 +770,6 @@ function render() {
   renderCoupons(me.coupons || []);
   updateSelectBar(); updateRerollFab();
 }
-// ==========================================
-// ประวัติการได้รับแต้ม (แสดงตอนเปิดหน้า)
-// ==========================================
 
 window.showWelcome = () => {
   document.getElementById('welcomeModal').classList.add('show');
@@ -587,7 +785,7 @@ window.closeHistoryModal = () => {
 async function checkPointHistory() {
   if (!me || !me.phone) return;
   const key = 'lastSeenPointAt_' + me.phone;
-  const lastSeen = localStorage.getItem(key); // ISO string หรือ null
+  const lastSeen = localStorage.getItem(key); 
 
   const { data, error } = await sb.rpc('rpc_get_my_point_logs', {
     p_phone: me.phone,
@@ -597,22 +795,18 @@ async function checkPointHistory() {
   if (error || !data?.ok) return;
 
   const rows = data.rows || [];
-  if (rows.length === 0) return; // ไม่มีแต้มใหม่ → ไม่เด้ง
+  if (rows.length === 0) return; 
 
   showHistoryModal(rows);
-
-  // จำว่าเห็นรายการล่าสุดแล้ว (rows[0].at คือตัวล่าสุด)
   localStorage.setItem(key, rows[0].at);
 }
 
 function showHistoryModal(rows) {
   const total = rows.reduce((s, r) => s + (Number(r.delta) || 0), 0);
-  document.getElementById('historySub').textContent =
-    `เพิ่มแต้มใหม่ ${rows.length} ครั้ง`;
+  document.getElementById('historySub').textContent = `คุณได้รับแต้มใหม่ ${rows.length} รายการ`;
 
   const list = document.getElementById('historyList');
   
-  // ✅ แก้ไขตรงนี้: ลบตัวแปร actorLine ออก และปรับหน้าตาให้เหลือแค่วันที่กับแต้ม
   list.innerHTML = rows.map(r => {
     const dt = new Date(r.at);
     const timeStr = isNaN(dt) ? '-' : dt.toLocaleString('th-TH', {
@@ -627,7 +821,7 @@ function showHistoryModal(rows) {
   }).join('');
 
   document.getElementById('historyTotal').innerHTML =
-    `ได้แต้มเพิ่ม <b>+${total}</b> แต้ม<br>ตอนนี้มี <b>${me.points}</b> แต้ม · ใช้สุ่มการ์ดได้ ${me.points} ใบ`;
+    `รวมที่ได้รับรอบนี้ <b>+${total}</b> แต้ม<br>แต้มสะสมปัจจุบัน: <b>${me.points}</b> แต้ม`;
 
   document.getElementById('historyModal').classList.add('show');
 }
