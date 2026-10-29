@@ -541,16 +541,17 @@ function showHistoryModal(rows) {
     `มีรายการใหม่ ${rows.length} ครั้ง`;
 
   const list = document.getElementById('historyList');
+  
+  // ✅ แก้ไขตรงนี้: ลบตัวแปร actorLine ออก และปรับหน้าตาให้เหลือแค่วันที่กับแต้ม
   list.innerHTML = rows.map(r => {
     const dt = new Date(r.at);
     const timeStr = isNaN(dt) ? '-' : dt.toLocaleString('th-TH', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
-    const actorLine = r.actor
-      ? `<div style="font-size:11px;color:#999">👤 ${r.actor}</div>` : '';
+    
     return `<div class="history-row">
-      <div><div class="history-time">${timeStr}</div>${actorLine}</div>
+      <div><div class="history-time">${timeStr}</div></div>
       <div class="history-delta">+${r.delta}</div>
     </div>`;
   }).join('');
