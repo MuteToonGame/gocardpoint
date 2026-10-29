@@ -122,9 +122,10 @@
 <div id="app">
   <div id="login">
     <h2>🍡 การ์ดลูกชิ้น</h2>
-    <p>ใส่เบอร์โทรและ PIN 4 หลัก</p>
+    <p>ใส่เบอร์โทรและ PIN 4 หลัก<br><span style="font-size:13px">ครั้งแรก? ใส่เบอร์ที่ให้ไว้กับร้าน แล้วตั้ง PIN เองได้เลย</span></p>
     <input id="phone" placeholder="0812345678" inputmode="numeric">
     <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN 4 หลัก">
+    <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="ใส่ PIN อีกครั้งเพื่อยืนยัน" style="display:none">
     <button onclick="login()">เข้าสู่ระบบ</button>
   </div>
 
@@ -209,6 +210,8 @@ const CARDS_PER_SAUSAGE = 5;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 let me = null;
 let pin = '';
+let setupMode = false;
+document.getElementById('phone').addEventListener('input', () => { setupMode = false; document.getElementById('pin2').style.display = 'none'; });
 let collection = null;
 const selectedIds = new Set();
 let selectedReroll = null;
@@ -246,9 +249,21 @@ window.login = async () => {
   if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
   pin = document.getElementById('pin').value.trim();
   if (!/^\d{4}$/.test(pin)) return toast('PIN ต้องเป็นเลข 4 หลัก');
+  if (setupMode) {
+    if (pin !== document.getElementById('pin2').value.trim()) return toast('PIN สองครั้งไม่ตรงกัน');
+    const { data: sd, error: se } = await sb.rpc('rpc_set_pin', { p_phone: phone, p_pin: pin });
+    if (se || !sd?.ok) return toast('ตั้ง PIN ไม่สำเร็จ ลองใหม่อีกครั้ง');
+    setupMode = false;
+    document.getElementById('pin2').style.display = 'none';
+  }
   const { data, error } = await sb.rpc('rpc_get_customer', { p_phone: phone, p_pin: pin });
   if (error) return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
   if (!data.ok) {
+    if (data.error === 'need_pin') {
+      setupMode = true;
+      document.getElementById('pin2').style.display = 'block';
+      return toast('ครั้งแรก: ใส่ PIN อีกครั้งเพื่อยืนยัน แล้วกดเข้าสู่ระบบ');
+    }
     return toast(data.error === 'locked' ? 'ใส่ PIN ผิดหลายครั้ง รอ 15 นาที' : 'เบอร์หรือ PIN ไม่ถูกต้อง');
   }
   localStorage.setItem('phone', phone);

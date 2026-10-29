@@ -344,7 +344,7 @@ function renderSelect() {
     <div class="points">${pointsLine}</div>
   `;
 
-  document.getElementById('pinFieldWrap').style.display = s.isNew ? 'block' : 'none';
+  document.getElementById('pinFieldWrap').style.display = 'none'; // ลูกค้าตั้ง PIN เองที่หน้าลูกค้า
   document.getElementById('btn1').classList.remove('selected');
   document.getElementById('btn2').classList.remove('selected');
   document.getElementById('confirmBtn').disabled = false;
