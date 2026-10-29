@@ -20,6 +20,11 @@
   .open-wrap { text-align: center; margin: 16px 0; } #openBtn { width: 100%; padding: 14px; font-size: 17px; background: #ef4444; }
   #main { padding-bottom: 100px; }
   
+  .howto { background: #fff; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 14px; margin: 12px 0 0; font-size: 13px; line-height: 1.7; color: #555; }
+  .howto b { color: #b45309; }
+  .open-note { font-size: 12px; color: #888; margin-top: 8px; }
+  .hint { font-size: 13px; color: #666; margin: -6px 0 12px; }
+  button#rerollFab { width: auto; padding: 0 18px; border-radius: 28px; font-size: 15px; font-weight: 600; }
   /* Tabs */
   .tabs { display: flex; background: #fff; border-radius: 12px; padding: 4px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
   .tab { flex: 1; padding: 10px; text-align: center; font-size: 14px; font-weight: 600; color: #666; cursor: pointer; border-radius: 8px; transition: background .15s, color .15s; }
@@ -120,7 +125,7 @@
     <p>ใส่เบอร์โทรและ PIN 4 หลัก</p>
     <input id="phone" placeholder="0812345678" inputmode="numeric">
     <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="PIN 4 หลัก">
-    <button onclick="login()">เข้า</button>
+    <button onclick="login()">เข้าสู่ระบบ</button>
   </div>
 
   <div id="main" style="display:none">
@@ -129,18 +134,21 @@
       <button class="logout-btn" onclick="logout()">ออก</button>
     </div>
     <div class="points-box">⭐ แต้ม: <b id="points">0</b></div>
+    <div class="howto"><b>🍡 วิธีสะสม</b><br>• ซื้อครบ 40 บาท ได้ 1 แต้ม<br>• ซื้อครบ 100 บาท แถมลูกชิ้นฟรี 1 ไม้ และได้แต้มเพิ่มอีก 1 แต้ม<br>• ใช้ 1 แต้ม สุ่มการ์ด 1 ใบ<br>• เก็บการ์ดครบ 5 ใบ แลกลูกชิ้นฟรี 1 ไม้ (มูลค่า 10 บาท)</div>
     <div class="open-wrap">
-      <button onclick="openPack()" id="openBtn">🎴 เปิดการ์ด (1 แต้ม)</button>
+      <button onclick="openPack()" id="openBtn">🎴 ใช้ 1 แต้ม สุ่มการ์ด 1 ใบ</button>
+      <div class="open-note">การ์ดเป็นของสะสม ไม่ใช่ลูกชิ้นจริง · เก็บครบ 5 ใบ ค่อยแลกลูกชิ้นฟรี</div>
     </div>
 
     <div class="tabs">
       <div class="tab active" data-tab="inv">การ์ด</div>
-      <div class="tab" data-tab="col">📖 สมุด</div>
+      <div class="tab" data-tab="col">📖 ชุดสะสม</div>
       <div class="tab" data-tab="cp">🎟️ คูปอง</div>
     </div>
 
     <div id="tab-inv" class="tab-content active">
       <h3>การ์ดของฉัน (<span id="invCount">0</span> ใบ)</h3>
+      <p class="hint">แตะเลือกการ์ด 5 ใบ เพื่อแลกลูกชิ้นฟรี 1 ไม้ (10 บาท)</p>
       <div id="inventory"></div>
     </div>
 
@@ -159,16 +167,17 @@
   <div class="select-info" id="selInfo">เลือกแล้ว 0/5 ใบ</div>
   <div class="select-actions">
     <button class="btn-ghost" onclick="clearSelection()">ยกเลิก</button>
-    <button id="redeemBtn" onclick="redeemCards()" disabled>🎟️ แลก</button>
+    <button id="redeemBtn" onclick="redeemCards()" disabled>🎟️ แลกลูกชิ้นฟรี</button>
   </div>
 </div>
 
-<button id="rerollFab" onclick="openRerollModal()">🔀</button>
+<button id="rerollFab" onclick="openRerollModal()">🔀 สุ่มการ์ดซ้ำใหม่</button>
 
 <div id="rerollModal" class="modal-overlay">
   <div class="modal-box">
-    <h3>🔀 Reroll การ์ดซ้ำ</h3>
-    <p style="font-size:13px;color:#666;margin-top:0">เลือกการ์ดซ้ำ 1 ใบ → สุ่มใหม่ (odds เท่ากล่องปกติ)<br>ทุก 6 ชม. · สูงสุด 4 ครั้ง/วัน</p>
+    <h3>🔀 สุ่มการ์ดซ้ำใหม่</h3>
+    <p style="font-size:13px;color:#666;margin-top:0">เลือกการ์ดซ้ำ 1 ใบ → เปลี่ยนเป็นการ์ดใบใหม่แบบสุ่ม<br>สุ่มได้ 1 ครั้งต่อรอบ · รอบใหม่ 09:00 · 13:00 · 17:00 · 21:00 น.</p>
+    <div id="rerollTimer" style="font-size:14px;font-weight:600;color:#7c3aed;margin:8px 0"></div>
     <div id="rerollList" class="reroll-list"></div>
     <div class="modal-actions">
       <button class="btn-ghost" style="background:#f3f4f6;color:#374151" onclick="closeRerollModal()">ปิด</button>
@@ -180,7 +189,7 @@
   <!-- Modal ประวัติการได้รับแต้ม -->
 <div id="historyModal" class="history-modal">
   <div class="history-box">
-    <h3>🎉 ประวัติการได้รับแต้ม</h3>
+    <h3>🎉 คุณได้แต้มใหม่</h3>
     <div class="history-sub" id="historySub"></div>
     <div class="history-list" id="historyList"></div>
     <div class="history-total" id="historyTotal"></div>
@@ -238,7 +247,7 @@ window.login = async () => {
   pin = document.getElementById('pin').value.trim();
   if (!/^\d{4}$/.test(pin)) return toast('PIN ต้องเป็นเลข 4 หลัก');
   const { data, error } = await sb.rpc('rpc_get_customer', { p_phone: phone, p_pin: pin });
-  if (error) return toast('ผิดพลาด: ' + error.message);
+  if (error) return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
   if (!data.ok) {
     return toast(data.error === 'locked' ? 'ใส่ PIN ผิดหลายครั้ง รอ 15 นาที' : 'เบอร์หรือ PIN ไม่ถูกต้อง');
   }
@@ -249,7 +258,7 @@ selectedIds.clear();
 
 checkPointHistory();
 
-if (me.is_new) setTimeout(() => toast('🎉 ยินดีต้อนรับ! รับ 3 แต้มฟรี'), 300);
+if (me.is_new) setTimeout(() => toast('🎉 ยินดีต้อนรับ! รับ 3 แต้มฟรี สุ่มการ์ดได้ 3 ใบ'), 300);
 render();
 };
 
@@ -265,9 +274,9 @@ window.openPack = async () => {
   btn.disabled = true;
   const { data, error } = await sb.rpc('rpc_open_pack', { p_phone: me.phone, p_pin: pin });
   btn.disabled = me.points < POINTS_PER_PACK;
-  if (error || !data.ok) return toast('ผิดพลาด: ' + (data?.error || error?.message));
+  if (error || !data.ok) return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
   const c = data.card;
-  toast(`✨ ได้ ${c.emoji} ${c.name} (พลัง ${c.power})`);
+  toast(`✨ สุ่มได้การ์ด ${c.emoji} ${c.name}`);
   await refresh();
 };
 
@@ -305,9 +314,9 @@ function updateSelectBar() {
   const usable = Math.floor(n / CARDS_PER_SAUSAGE) * CARDS_PER_SAUSAGE;
   const leftover = n - usable;
   const rewards = usable / CARDS_PER_SAUSAGE;
-  if (n < CARDS_PER_SAUSAGE) info.innerHTML = `เลือกแล้ว <b>${n}/${CARDS_PER_SAUSAGE}</b> ใบ`;
-  else if (leftover === 0) info.innerHTML = `ใช้ <b>${usable}</b> ใบ → ได้ ${rewards} คูปอง`;
-  else info.innerHTML = `ใช้ <b>${usable}</b> ใบ → ${rewards} คูปอง <span style="color:#999">(เหลือ ${leftover} ไม่ใช้)</span>`;
+  if (n < CARDS_PER_SAUSAGE) info.innerHTML = `เลือกแล้ว <b>${n}/${CARDS_PER_SAUSAGE}</b> ใบ · ครบ ${CARDS_PER_SAUSAGE} แลกลูกชิ้นฟรี`;
+  else if (leftover === 0) info.innerHTML = `ใช้ <b>${usable}</b> ใบ → แลกลูกชิ้นฟรี ${rewards} ไม้`;
+  else info.innerHTML = `ใช้ <b>${usable}</b> ใบ → แลกลูกชิ้นฟรี ${rewards} ไม้ <span style="color:#999">(เหลือ ${leftover} ไม่ใช้)</span>`;
   btn.disabled = n < CARDS_PER_SAUSAGE;
 }
 
@@ -322,14 +331,14 @@ window.redeemCards = async () => {
   const all = [...selectedIds];
   const usable = Math.floor(n / CARDS_PER_SAUSAGE) * CARDS_PER_SAUSAGE;
   const toRedeem = all.slice(0, usable);
-  if (!confirm(`แลก ${usable} ใบ รับ ${usable / CARDS_PER_SAUSAGE} คูปอง?`)) return;
+  if (!confirm(`ใช้การ์ด ${usable} ใบ แลกลูกชิ้นฟรี ${usable / CARDS_PER_SAUSAGE} ไม้?\n(จะได้คูปอง ต้องโชว์โค้ดที่ร้านเพื่อรับลูกชิ้น)`)) return;
   const btn = document.getElementById('redeemBtn');
   btn.disabled = true;
   const { data, error } = await sb.rpc('rpc_create_redemption', { p_phone: me.phone, p_pin: pin, p_card_ids: toRedeem });
-  if (error || !data.ok) { btn.disabled = false; return toast('ผิดพลาด: ' + (data?.error || error?.message)); }
+  if (error || !data.ok) { btn.disabled = false; return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง'); }
   selectedIds.clear();
   await refresh();
-  toast('✅ ได้คูปองแล้ว ดูที่ช่อง "คูปอง"');
+  toast('✅ ได้คูปองแล้ว! โชว์โค้ดที่ร้านเพื่อรับลูกชิ้น (ดูที่แท็บ คูปอง)');
 };
 
 async function refresh() {
@@ -351,7 +360,7 @@ async function loadCollection() {
 function cardHTML(i, isSel, badgeNum) {
   return `<div class="card rarity-${i.rarity}${isSel ? ' selected' : ''}" data-id="${i.inventory_id}">
     <div class="art"><span class="emoji">${i.emoji}</span></div>
-    <div class="meta"><div class="name">${escapeHtml(i.name)}</div><div class="power">⚡ ${i.power}</div></div>
+    <div class="meta"><div class="name">${escapeHtml(i.name)}</div></div>
     <div class="badge">${isSel ? badgeNum : ''}</div>
   </div>`;
 }
@@ -362,8 +371,8 @@ function renderCoupons(cps) {
   cpCountEl.textContent = cps.length;
   if (cps.length === 0) { couponsEl.innerHTML = '<p class="coupons-empty">ยังไม่มีคูปองที่ยังไม่ได้ใช้</p>'; return; }
   couponsEl.innerHTML = cps.map(k => {
-    const countText = k.label ? `<div class="label">${escapeHtml(k.label)}</div>` : `<div class="count">🍡 ลูกชิ้น <b>${k.cards / CARDS_PER_SAUSAGE}</b> ไม้</div>`;
-    return `<div class="coupon">${countText}<div class="code">${escapeHtml(k.code)}</div><div class="meta">แสดงโค้ดนี้ที่ร้าน · ${new Date(k.created_at).toLocaleDateString('th-TH')}</div></div>`;
+    const countText = k.label ? `<div class="label">${escapeHtml(k.label)}</div>` : `<div class="count">🍡 ลูกชิ้นฟรี <b>${k.cards / CARDS_PER_SAUSAGE}</b> ไม้</div>`;
+    return `<div class="coupon">${countText}<div class="code">${escapeHtml(k.code)}</div><div class="meta">แสดงโค้ดนี้ที่ร้านเพื่อรับลูกชิ้น · ${new Date(k.created_at).toLocaleDateString('th-TH')}</div></div>`;
   }).join('');
 }
 
@@ -405,13 +414,32 @@ window.claimSet = async (code) => {
   const { data, error } = await sb.rpc('rpc_claim_set_reward', { p_phone: me.phone, p_pin: pin, p_set_code: code });
   if (error || !data.ok) {
     const map = { already_claimed: 'ชุดนี้รับรางวัลไปแล้ว', not_complete: 'ยังเก็บไม่ครบ', set_not_found: 'ไม่พบชุดนี้', auth: 'เซสชันหมดอายุ' };
-    return toast(map[data?.error] || 'ผิดพลาด: ' + (data?.error || error?.message));
+    return toast(map[data?.error] || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
   }
   toast(`🎉 ได้รับรางวัล! โค้ด: ${data.coupon.code}`);
   await refresh();
 };
 
 // Reroll
+function rerollLocked() {
+  return !!(me && me.reroll_next_at && Date.now() < new Date(me.reroll_next_at).getTime());
+}
+function tickReroll() {
+  const el = document.getElementById('rerollTimer');
+  const btn = document.getElementById('rerollConfirm');
+  if (!el || !btn) return;
+  if (rerollLocked()) {
+    const s = Math.max(0, Math.ceil((new Date(me.reroll_next_at).getTime() - Date.now()) / 1000));
+    const p = n => String(n).padStart(2, '0');
+    el.textContent = `⏳ สุ่มได้อีกครั้งใน ${p(Math.floor(s / 3600))}:${p(Math.floor(s % 3600 / 60))}:${p(s % 60)}`;
+    btn.disabled = true;
+  } else {
+    el.textContent = '✅ รอบนี้สุ่มได้ 1 ครั้ง';
+    btn.disabled = !selectedReroll;
+  }
+}
+setInterval(tickReroll, 1000);
+
 function getDupeGroups() {
   const groups = {};
   for (const i of me.inventory) {
@@ -435,7 +463,7 @@ function updateRerollFab() {
 
 window.openRerollModal = () => {
   const dupes = getDupeGroups();
-  if (dupes.length === 0) return toast('ไม่มีการ์ดซ้ำให้ reroll');
+  if (dupes.length === 0) return toast('ไม่มีการ์ดซ้ำให้สุ่มใหม่');
   selectedReroll = null;
   const list = document.getElementById('rerollList');
   list.innerHTML = dupes.map(d => {
@@ -449,10 +477,10 @@ window.openRerollModal = () => {
       list.querySelectorAll('.reroll-item').forEach(x => x.classList.remove('selected'));
       el.classList.add('selected');
       selectedReroll = Number(el.dataset.invId);
-      document.getElementById('rerollConfirm').disabled = false;
+      tickReroll();
     });
   });
-  document.getElementById('rerollConfirm').disabled = true;
+  tickReroll();
   document.getElementById('rerollModal').classList.add('show');
 };
 
@@ -464,12 +492,13 @@ window.doReroll = async () => {
   btn.disabled = true;
   const { data, error } = await sb.rpc('rpc_reroll_dupe', { p_phone: me.phone, p_pin: pin, p_inventory_id: selectedReroll });
   if (error || !data.ok) {
-    const errMap = { not_duplicate: 'การ์ดนี้ไม่ซ้ำ', cooldown: 'ติดคูลดาวน์ 6 ชม.', daily_limit: 'ใช้ครบ 4 ครั้ง/วันแล้ว', not_found: 'ไม่พบการ์ดนี้', auth: 'เซสชันหมดอายุ' };
-    toast(errMap[data?.error] || 'ผิดพลาด: ' + (data?.error || error?.message));
-    btn.disabled = false; return;
+    const errMap = { not_duplicate: 'การ์ดนี้ไม่ซ้ำ', slot_used: 'รอบนี้สุ่มไปแล้ว รอรอบถัดไปนะ', not_found: 'ไม่พบการ์ดนี้', auth: 'เซสชันหมดอายุ' };
+    toast(errMap[data?.error] || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+    if (data?.error === 'slot_used') me.reroll_next_at = data.next_at;
+    btn.disabled = false; tickReroll(); return;
   }
   const c = data.card;
-  toast(`🔀 ได้ ${c.emoji} ${c.name} (${c.rarity})`);
+  toast(`🔀 สุ่มใหม่ได้การ์ด ${c.emoji} ${c.name}`);
   closeRerollModal(); await refresh();
   if (document.getElementById('tab-col').classList.contains('active')) loadCollection();
 };
@@ -482,7 +511,7 @@ function render() {
   document.getElementById('points').textContent = me.points;
   document.getElementById('invCount').textContent = me.inventory.length;
   const openBtn = document.getElementById('openBtn');
-  openBtn.textContent = `🎴 เปิดการ์ด (${POINTS_PER_PACK} แต้ม)`;
+  openBtn.textContent = `🎴 ใช้ ${POINTS_PER_PACK} แต้ม สุ่มการ์ด 1 ใบ`;
   openBtn.disabled = me.points < POINTS_PER_PACK;
 
   const validIds = new Set(me.inventory.map(i => i.inventory_id));
@@ -494,7 +523,7 @@ function render() {
     return (b.power || 0) - (a.power || 0);
   });
 
-  if (sorted.length === 0) inventoryEl.innerHTML = '<p class="empty">ยังไม่มีการ์ด ไปซื้อลูกชิ้นก่อน!</p>';
+  if (sorted.length === 0) inventoryEl.innerHTML = '<p class="empty">ยังไม่มีการ์ด · ซื้อครบ 40 บาทรับ 1 แต้ม แล้วกดสุ่มการ์ด</p>';
   else {
     const selIdx = new Map(); let n = 1;
     for (const id of selectedIds) selIdx.set(id, n++);
@@ -538,7 +567,7 @@ async function checkPointHistory() {
 function showHistoryModal(rows) {
   const total = rows.reduce((s, r) => s + (Number(r.delta) || 0), 0);
   document.getElementById('historySub').textContent =
-    `มีรายการใหม่ ${rows.length} ครั้ง`;
+    `เพิ่มแต้มใหม่ ${rows.length} ครั้ง`;
 
   const list = document.getElementById('historyList');
   
@@ -557,7 +586,7 @@ function showHistoryModal(rows) {
   }).join('');
 
   document.getElementById('historyTotal').innerHTML =
-    `รวมที่ได้รับ: <b>+${total}</b> แต้ม`;
+    `ได้แต้มเพิ่ม <b>+${total}</b> แต้ม<br>ตอนนี้มี <b>${me.points}</b> แต้ม · ใช้สุ่มการ์ดได้ ${me.points} ใบ`;
 
   document.getElementById('historyModal').classList.add('show');
 }
