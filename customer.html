@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover">
 <title>โก้ลูกชิ้นกรอบ | การ์ดสะสม</title>
+<meta name="description" content="สะสมแต้มจากการซื้อ สุ่มการ์ด ครบ 5 ใบแลกลูกชิ้นฟรี ที่โก้ลูกชิ้นกรอบ">
+<meta name="theme-color" content="#D92B3A">
+<meta property="og:type" content="website">
+<meta property="og:title" content="โก้ลูกชิ้นกรอบ | การ์ดสะสม">
+<meta property="og:description" content="สะสมแต้มจากการซื้อ สุ่มการ์ด ครบ 5 ใบแลกลูกชิ้นฟรี">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%A1%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -403,6 +409,7 @@
     <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
     <input id="pin2" type="password" inputmode="numeric" maxlength="4" placeholder="ยืนยัน PIN อีกครั้ง" style="display:none">
     <button id="loginBtn" onclick="login()">เข้าสู่ระบบ</button>
+    <p style="font-size:13px; color:#94A3B8; margin:16px 0 0">ลืม PIN? แจ้งพนักงานที่ร้านให้รีเซ็ตให้ได้เลย</p>
   </div>
 
   <div id="main" style="display:none">
@@ -510,8 +517,16 @@
   </div>
 </div>
 <div id="toast"></div>
+<script>
+setTimeout(function () {
+  if (window.__appReady) return;
+  var t = document.getElementById('toast');
+  t.textContent = 'โหลดไม่สำเร็จ เช็กอินเทอร์เน็ตแล้วรีเฟรชหน้านี้';
+  t.classList.add('show');
+}, 8000);
+</script>
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const SUPABASE_URL = 'https://xhnxrboydlevjeqworyi.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ecRbr3bPB9ldZEGss8xsFw_P5VAvCYy';
@@ -519,6 +534,19 @@ const POINTS_PER_PACK = 1;
 const CARDS_PER_SAUSAGE = 5;
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+window.__appReady = true;
+// rpc wrapper: never throws; offline / timeout come back as { data:null, error }
+const rpc = async (name, args) => {
+  if (!navigator.onLine) return { data: null, error: { message: 'offline' } };
+  try {
+    return await Promise.race([
+      sb.rpc(name, args),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000))
+    ]);
+  } catch (e) {
+    return { data: null, error: e };
+  }
+};
 let me = null;
 let pin = '';
 let setupMode = false;
@@ -556,20 +584,20 @@ document.querySelectorAll('.tab').forEach(t => {
 });
 
 // Auth
-window.login = async () => {
+const _login = async () => {
   const phone = document.getElementById('phone').value.trim();
   if (!/^0\d{9}$/.test(phone)) return toast('เบอร์โทรไม่ถูกต้อง');
   pin = document.getElementById('pin').value.trim();
   if (!/^\d{4}$/.test(pin)) return toast('PIN ต้องเป็นเลข 4 หลัก');
   if (setupMode) {
     if (pin !== document.getElementById('pin2').value.trim()) return toast('PIN สองครั้งไม่ตรงกัน');
-    const { data: sd, error: se } = await sb.rpc('rpc_set_pin', { p_phone: phone, p_pin: pin });
+    const { data: sd, error: se } = await rpc('rpc_set_pin', { p_phone: phone, p_pin: pin });
     if (se || !sd?.ok) return toast('ตั้ง PIN ไม่สำเร็จ ลองใหม่อีกครั้ง');
     setupMode = false;
     document.getElementById('pin2').style.display = 'none';
   }
-  const { data, error } = await sb.rpc('rpc_get_customer', { p_phone: phone, p_pin: pin });
-  if (error) return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+  const { data, error } = await rpc('rpc_get_customer', { p_phone: phone, p_pin: pin });
+  if (error) return toast('เกิดข้อผิดพลาด เช็กอินเทอร์เน็ตแล้วลองใหม่');
   if (!data.ok) {
     if (data.error === 'need_pin') {
       setupMode = true;
@@ -578,7 +606,7 @@ window.login = async () => {
       document.getElementById('pin2').focus();
       return toast('ครั้งแรก: ใส่ PIN อีกครั้งเพื่อยืนยัน');
     }
-    return toast(data.error === 'locked' ? 'ใส่ PIN ผิดหลายครั้ง รอ 15 นาที' : 'เบอร์หรือ PIN ไม่ถูกต้อง');
+    return toast(data.error === 'locked' ? 'ใส่ PIN ผิดหลายครั้ง รอ 15 นาที หรือแจ้งที่ร้านเพื่อรีเซ็ต' : 'เบอร์หรือ PIN ไม่ถูกต้อง');
   }
   localStorage.setItem('phone', phone);
   localStorage.setItem('pin', pin);
@@ -591,6 +619,13 @@ window.login = async () => {
   render();
 };
 
+window.login = async () => {
+  const b = document.getElementById('loginBtn');
+  if (b.disabled) return;
+  b.disabled = true;
+  try { await _login(); } finally { b.disabled = false; }
+};
+
 window.logout = () => {
   localStorage.removeItem('phone');
   localStorage.removeItem('pin');
@@ -601,9 +636,9 @@ window.openPack = async () => {
   if (me.points < POINTS_PER_PACK) return toast('แต้มไม่พอ');
   const btn = document.getElementById('openBtn');
   btn.disabled = true;
-  const { data, error } = await sb.rpc('rpc_open_pack', { p_phone: me.phone, p_pin: pin });
+  const { data, error } = await rpc('rpc_open_pack', { p_phone: me.phone, p_pin: pin });
   btn.disabled = me.points < POINTS_PER_PACK;
-  if (error || !data.ok) return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+  if (error || !data.ok) return toast('เกิดข้อผิดพลาด เช็กอินเทอร์เน็ตแล้วลองใหม่');
   const c = data.card;
   const had = c.card_id != null && me.inventory.some(i => i.card_id === c.card_id);
   await refresh();
@@ -664,8 +699,8 @@ window.redeemCards = async () => {
   if (!confirm(`ใช้การ์ด ${usable} ใบ แลกลูกชิ้นฟรี ${usable / CARDS_PER_SAUSAGE} ไม้?\n(จะได้คูปอง ต้องโชว์โค้ดที่ร้านเพื่อรับลูกชิ้น)`)) return;
   const btn = document.getElementById('redeemBtn');
   btn.disabled = true;
-  const { data, error } = await sb.rpc('rpc_create_redemption', { p_phone: me.phone, p_pin: pin, p_card_ids: toRedeem });
-  if (error || !data.ok) { btn.disabled = false; return toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง'); }
+  const { data, error } = await rpc('rpc_create_redemption', { p_phone: me.phone, p_pin: pin, p_card_ids: toRedeem });
+  if (error || !data.ok) { btn.disabled = false; return toast('เกิดข้อผิดพลาด เช็กอินเทอร์เน็ตแล้วลองใหม่'); }
   selectedIds.clear();
   await refresh();
   document.querySelector('.tab[data-tab="cp"]').click();
@@ -673,7 +708,8 @@ window.redeemCards = async () => {
 };
 
 async function refresh() {
-  const { data } = await sb.rpc('rpc_get_customer', { p_phone: me.phone, p_pin: pin });
+  const { data, error } = await rpc('rpc_get_customer', { p_phone: me.phone, p_pin: pin });
+  if (error || !data?.ok) return toast('โหลดข้อมูลไม่สำเร็จ เช็กอินเทอร์เน็ตแล้วลองใหม่');
   me = data; collection = null; render();
 
   checkPointHistory();
@@ -683,7 +719,7 @@ async function refresh() {
 
 async function loadCollection() {
   collectionEl.innerHTML = '<p class="empty">กำลังโหลด...</p>';
-  const { data, error } = await sb.rpc('rpc_get_collection', { p_phone: me.phone, p_pin: pin });
+  const { data, error } = await rpc('rpc_get_collection', { p_phone: me.phone, p_pin: pin });
   if (error || !data.ok) { collectionEl.innerHTML = '<p class="empty">โหลดไม่สำเร็จ</p>'; return; }
   collection = data.sets; renderCollection();
 }
@@ -742,10 +778,10 @@ function renderCollection() {
 
 window.claimSet = async (code) => {
   if (!confirm('ยืนยันรับรางวัลชุดนี้?')) return;
-  const { data, error } = await sb.rpc('rpc_claim_set_reward', { p_phone: me.phone, p_pin: pin, p_set_code: code });
+  const { data, error } = await rpc('rpc_claim_set_reward', { p_phone: me.phone, p_pin: pin, p_set_code: code });
   if (error || !data.ok) {
     const map = { already_claimed: 'ชุดนี้รับรางวัลไปแล้ว', not_complete: 'ยังเก็บไม่ครบ', set_not_found: 'ไม่พบชุดนี้', auth: 'เซสชันหมดอายุ' };
-    return toast(map[data?.error] || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+    return toast(map[data?.error] || 'เกิดข้อผิดพลาด เช็กอินเทอร์เน็ตแล้วลองใหม่');
   }
   toast(`🎉 ได้รับรางวัล! โค้ด: ${data.coupon.code}`);
   await refresh();
@@ -821,10 +857,10 @@ window.doReroll = async () => {
   if (!selectedReroll) return;
   const btn = document.getElementById('rerollConfirm');
   btn.disabled = true;
-  const { data, error } = await sb.rpc('rpc_reroll_dupe', { p_phone: me.phone, p_pin: pin, p_inventory_id: selectedReroll });
+  const { data, error } = await rpc('rpc_reroll_dupe', { p_phone: me.phone, p_pin: pin, p_inventory_id: selectedReroll });
   if (error || !data.ok) {
     const errMap = { not_duplicate: 'การ์ดนี้ไม่ซ้ำ', slot_used: 'รอบนี้สุ่มไปแล้ว รอรอบถัดไปนะ', not_found: 'ไม่พบการ์ดนี้', auth: 'เซสชันหมดอายุ' };
-    toast(errMap[data?.error] || 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง');
+    toast(errMap[data?.error] || 'เกิดข้อผิดพลาด เช็กอินเทอร์เน็ตแล้วลองใหม่');
     if (data?.error === 'slot_used') me.reroll_next_at = data.next_at;
     btn.disabled = false; tickReroll(); return;
   }
@@ -891,7 +927,7 @@ async function checkPointHistory() {
   const key = 'lastSeenPointAt_' + me.phone;
   const lastSeen = localStorage.getItem(key); 
 
-  const { data, error } = await sb.rpc('rpc_get_my_point_logs', {
+  const { data, error } = await rpc('rpc_get_my_point_logs', {
     p_phone: me.phone,
     p_pin: pin,
     p_since: lastSeen || null,

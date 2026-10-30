@@ -238,10 +238,23 @@
     <div id="hist" style="margin-top:10px"></div>
   </div>
 
-  <!-- ④ ประวัติทั้งหมด (Audit Log) -->
+  <!-- ④ รีเซ็ต PIN ลูกค้า -->
   <div class="box">
     <div class="step-title">
       <div class="step-num">④</div>
+      <h3>รีเซ็ต PIN ลูกค้า</h3>
+    </div>
+    <div class="phone-input-group">
+      <input id="rpPhone" placeholder="เบอร์ลูกค้า 10 หลัก" inputmode="numeric" maxlength="10">
+      <button id="rpBtn" onclick="resetPin()" style="background:#dc2626">รีเซ็ต PIN</button>
+    </div>
+    <p style="font-size:12px;color:#888;margin:8px 0 0">ล้าง PIN เดิม แล้วให้ลูกค้าเปิดหน้าเว็บเพื่อตั้ง PIN ใหม่เอง (ควรดูบัตรหรือยืนยันตัวตนลูกค้าก่อน)</p>
+  </div>
+
+  <!-- ⑤ ประวัติทั้งหมด (Audit Log) -->
+  <div class="box">
+    <div class="step-title">
+      <div class="step-num">⑤</div>
       <h3>ประวัติทั้งหมด (Audit Log)</h3>
     </div>
     <div class="log-controls">
@@ -498,6 +511,34 @@ window.useRedemption = async () => {
   document.getElementById('rCode').value = '';
 };
 
+// ---------- ④ reset customer PIN ----------
+window.resetPin = async () => {
+  const phone = document.getElementById('rpPhone').value.trim();
+  if (!/^0\d{9}$/.test(phone)) return toast('เบอร์ไม่ถูกต้อง');
+  const btn = document.getElementById('rpBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try {
+    const { data: look, error: lookErr } = await sb.rpc('rpc_lookup_customer', { p_phone: phone });
+    if (lookErr || !look) return toast('ตรวจสอบลูกค้าไม่สำเร็จ: ' + (lookErr?.message || 'ไม่มีข้อมูลตอบกลับ'));
+    if (!look.ok) return toast(look.error === 'not_found' ? '❌ ไม่พบเบอร์นี้ในระบบ' : 'ผิดพลาด: ' + look.error);
+
+    const who = look.name ? `${look.name} (${phone})` : phone;
+    if (!confirm(`รีเซ็ต PIN ของ ${who} ?\n\nPIN เดิมจะใช้ไม่ได้ ลูกค้าต้องตั้ง PIN ใหม่เอง`)) return;
+
+    const { data, error } = await sb.rpc('rpc_reset_pin', { p_phone: phone });
+    if (error || !data?.ok) {
+      return toast('รีเซ็ตไม่สำเร็จ: ' + (data?.error || error?.message || 'ไม่ทราบสาเหตุ'));
+    }
+    document.getElementById('rpPhone').value = '';
+    alert(`✅ รีเซ็ต PIN แล้ว\n\nบอกลูกค้าให้เปิดหน้าสะสมการ์ด ใส่เบอร์ ${phone} แล้วตั้ง PIN ใหม่ได้เลย`);
+  } catch (e) {
+    toast('เกิดข้อผิดพลาด เช็กอินเทอร์เน็ตแล้วลองใหม่');
+  } finally {
+    btn.disabled = false;
+  }
+};
+
 // ---------- ③ history ----------
 window.showHistory = async () => {
   const phone = document.getElementById('hPhone').value.trim();
@@ -521,6 +562,7 @@ const ACTION_LABEL = {
   open_pack:        '🎴 เปิดการ์ด',
   claim_set_reward: '⭐ รับรางวัล',
   reroll:           '🔀 Reroll',
+  reset_pin:        '🔑 รีเซ็ต PIN',
 };
 
 window.loadAllLogs = async () => {
